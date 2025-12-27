@@ -4,6 +4,8 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text.dart';
 import '../../theme/app_shadows.dart';
+import '../Customer/home.dart';
+import '../auth/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final passCtrl = TextEditingController();
   bool obscure = true;
   bool remember = true;
+  // ─── STATIC AUTH (TEMP) ───
+  static const String _staticEmail = "customer@test.com";
+  static const String _staticPassword = "123456";
+  static const String _staticRole = "customer"; // customer | shop | rider
+
 
   @override
   void dispose() {
@@ -124,7 +131,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 54,
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      final email = emailCtrl.text.trim();
+                      final password = passCtrl.text.trim();
+
+                      if (email != _staticEmail || password != _staticPassword) {
+                        _showError(context, "Invalid email or password");
+                        return;
+                      }
+
+                      // Role-based routing
+                      switch (_staticRole) {
+                        case "customer":
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          );
+                          break;
+
+                        case "shop":
+                          _showError(context, "Shop portal coming soon");
+                          break;
+
+                        case "rider":
+                          _showError(context, "Rider portal coming soon");
+                          break;
+
+                        default:
+                          _showError(context, "Unknown role");
+                      }
+                    },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.textDark,
                       foregroundColor: Colors.white,
@@ -153,7 +190,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignupScreen()),
+                        );
+                      },
+
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.textDark,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -314,6 +357,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+void _showError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        message,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      backgroundColor: Colors.black87,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  );
+}
+
 
 class _LoginTopCap extends StatelessWidget {
   const _LoginTopCap();
