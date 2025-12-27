@@ -31,160 +31,162 @@ class YourFeedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // ✅ Grey panel behind "Your Feed" section (like image)
-            const _FeedGreyPanel(),
+      body: Stack(
+        children: [
+          // ✅ Grey panel behind "Your Feed" section (like image)
+          const _FeedGreyPanel(),
 
-            // ✅ Pure white cap behind date/bell/avatar (and behind status bar too)
-            const _TopCapWhite(),
+          // ✅ Pure white cap behind date/bell/avatar (and behind status bar too)
+          const _TopCapWhite(),
 
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 6, 18, 110),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _topChrome(),
-                  const SizedBox(height: 18),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 110),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _topChrome(),
+                const SizedBox(height: 18),
 
-                  const Text(
-                    "Your Feed",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 34,
-                      height: 1.05,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Georgia',
-                      color: textDark,
-                    ),
+                const Text(
+                  "Your Feed",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 34,
+                    height: 1.05,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Georgia',
+                    color: textDark,
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Add your own pieces to create a\npersonalized feed",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.35,
-                      color: Color(0xFF8A8A90),
-                      fontWeight: FontWeight.w500,
-                    ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Add your own pieces to create a\npersonalized feed",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    color: Color(0xFF8A8A90),
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
 
-                  _hangerMock(),
-                  const SizedBox(height: 16),
+                _hangerMock(),
+                const SizedBox(height: 16),
 
-                  _closetCapsule(),
-                  const SizedBox(height: 22),
+                _closetCapsule(),
+                const SizedBox(height: 22),
 
-                  Row(
-                    children: const [
-                      Text(
-                        "Inspo",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: textDark,
-                        ),
+                Row(
+                  children: const [
+                    Text(
+                      "Inspo",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: textDark,
                       ),
-                      Spacer(),
-                      Text(
-                        "Scroll for inspiration",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF9A9AA0),
-                        ),
+                    ),
+                    Spacer(),
+                    Text(
+                      "Scroll for inspiration",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF9A9AA0),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-                  _inspoPreviewCard(),
-                ],
-              ),
+                _inspoPreviewCard(),
+              ],
             ),
+          ),
 
-            const Align(
-              alignment: Alignment.bottomCenter,
-              child: _ThreeDNavBar(),
-            ),
-          ],
-        ),
+          const Align(
+            alignment: Alignment.bottomCenter,
+            child: _ThreeDNavBar(),
+          ),
+        ],
       ),
+
     );
   }
 
   Widget _topChrome() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              "05",
-              style: TextStyle(
-                fontSize: 44,
-                height: 1.0,
-                fontWeight: FontWeight.w600,
-                color: textDark,
-                letterSpacing: -1.0,
+    return Padding(
+      padding: const EdgeInsets.only(top: 35), // 👈 adjust (14–24 looks best)
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "05",
+                style: TextStyle(
+                  fontSize: 44,
+                  height: 1.0,
+                  fontWeight: FontWeight.w600,
+                  color: textDark,
+                  letterSpacing: -1.0,
+                ),
+              ),
+              SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    "today",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textMid,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    "feb",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textMid,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const Spacer(),
+
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none_rounded),
+            color: textDark,
+            splashRadius: 22,
+          ),
+          const SizedBox(width: 2),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFEDEDF2),
+              border: Border.all(color: divider),
+            ),
+            child: ClipOval(
+              child: Image.network(
+                "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=60",
+                fit: BoxFit.cover,
               ),
             ),
-            SizedBox(height: 2),
-            Row(
-              children: [
-                Text(
-                  "today",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: textMid,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  "feb",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: textMid,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const Spacer(),
-
-        // Bell + avatar (same)
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
-          color: textDark,
-          splashRadius: 22,
-        ),
-        const SizedBox(width: 2),
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFFEDEDF2),
-            border: Border.all(color: divider),
           ),
-          child: ClipOval(
-            child: Image.network(
-              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=60",
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+
 
   Widget _hangerMock() {
     return Container(
@@ -541,3 +543,5 @@ class _ThreeDNavBar extends StatelessWidget {
     );
   }
 }
+
+
