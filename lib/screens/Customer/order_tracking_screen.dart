@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
+import 'order_result_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key});
@@ -18,7 +19,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   late Animation<double> _fade;
   late Animation<Offset> _slide;
 
-  // Demo status index (0–5)
+  /// Demo status index (0–5)
   int currentStep = 3;
 
   final steps = const [
@@ -48,12 +49,36 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     );
 
     _enterCtrl.forward();
+
+    /// ✅ SAFE POST-BUILD CHECK
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndNavigateResult();
+    });
   }
 
   @override
   void dispose() {
     _enterCtrl.dispose();
     super.dispose();
+  }
+
+  /// ✅ DELIVERY → RESULT LINK
+  void _checkAndNavigateResult() {
+    if (currentStep == steps.length - 1) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const OrderResultScreen(
+              type: OrderResultType.delivered,
+              orderId: "QDS-28471",
+            ),
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -87,10 +112,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             children: [
               _orderHeader(),
               const SizedBox(height: 18),
-
               _timeline(),
               const SizedBox(height: 24),
-
               _liveRiderCard(),
             ],
           ),
@@ -115,10 +138,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         children: const [
           Text(
             "Order #QDS-28471",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           SizedBox(height: 6),
           Text(
@@ -163,19 +183,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       shape: BoxShape.circle,
                     ),
                     child: done
-                        ? const Icon(
-                      Icons.check,
-                      size: 12,
-                      color: Colors.white,
-                    )
+                        ? const Icon(Icons.check, size: 12, color: Colors.white)
                         : null,
                   ),
                   if (!last)
                     Container(
                       width: 2,
                       height: 42,
-                      color:
-                      done ? AppColors.textDark : AppColors.divider,
+                      color: done
+                          ? AppColors.textDark
+                          : AppColors.divider,
                     ),
                 ],
               ),
@@ -189,9 +206,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       fontSize: 14,
                       fontWeight:
                       done ? FontWeight.w800 : FontWeight.w600,
-                      color: done
-                          ? AppColors.textDark
-                          : AppColors.textMid,
+                      color:
+                      done ? AppColors.textDark : AppColors.textMid,
                     ),
                   ),
                 ),
@@ -234,10 +250,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               children: const [
                 Text(
                   "Rider: Ali Khan",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w900),
                 ),
                 SizedBox(height: 4),
                 Text(
@@ -276,10 +289,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           const Spacer(),
           const Text(
             "Order Tracking",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const Spacer(),
           const SizedBox(width: 40),
@@ -288,18 +298,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     );
   }
 
-  Widget _blurBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _blurBtn({required IconData icon, required VoidCallback onTap}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: IconButton(
-          onPressed: onTap,
-          icon: Icon(icon),
-        ),
+        child: IconButton(onPressed: onTap, icon: Icon(icon)),
       ),
     );
   }
@@ -331,7 +335,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       child: OutlinedButton(
                         onPressed: () {},
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.white54),
+                          side:
+                          const BorderSide(color: Colors.white54),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius:
@@ -340,7 +345,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         ),
                         child: const Text(
                           "Call Shop",
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                          style:
+                          TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -358,7 +364,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         ),
                         child: const Text(
                           "Call Rider",
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                          style:
+                          TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
