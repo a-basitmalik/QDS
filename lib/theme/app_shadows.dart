@@ -1,48 +1,45 @@
 import 'package:flutter/material.dart';
 
 class AppShadows {
-  static const softCard = [
+  // ✅ Soft glass shadow
+  static List<BoxShadow> soft = [
     BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 18,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  // ✅ Larger “card” shadow
+  static List<BoxShadow> shadowLg = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.10),
       blurRadius: 26,
+      offset: const Offset(0, 14),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.70),
+      blurRadius: 22,
+      offset: const Offset(-10, -10),
+      spreadRadius: -10,
+    ),
+  ];
+
+  // ✅ Elevated icon / puck shadow
+  static List<BoxShadow> puck = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.16),
+      blurRadius: 22,
+      offset: const Offset(0, 12),
+    ),
+  ];
+
+  // ✅ Top cap (for header cut shape)
+  static const List<BoxShadow> topCap = [
+    BoxShadow(
+      color: Color(0x14000000),
+      blurRadius: 24,
       offset: Offset(0, 16),
-      color: Color(0x0F000000),
-    ),
-  ];
-
-  static const topCap = [
-    BoxShadow(
-      blurRadius: 18,
-      offset: Offset(0, 12),
-      color: Color(0x12000000),
-    ),
-  ];
-
-  static const darkCapsule = [
-    BoxShadow(
-      blurRadius: 30,
-      offset: Offset(0, 18),
-      color: Color(0x26000000),
-    ),
-  ];
-
-  static const navPill = [
-    BoxShadow(
-      blurRadius: 26,
-      offset: Offset(0, 14),
-      color: Color(0x33000000),
-    ),
-  ];
-
-  static const fab3d = [
-    BoxShadow(
-      blurRadius: 18,
-      offset: Offset(0, 10),
-      color: Color(0x55000000),
-    ),
-    BoxShadow(
-      blurRadius: 8,
-      offset: Offset(0, -2),
-      color: Color(0x22FFFFFF),
     ),
   ];
 }

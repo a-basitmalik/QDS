@@ -10,12 +10,10 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 
-/// ✅ Premium Profile Screen (Nexora Theme)
-/// - SAME premium glassmorphism + glow blobs as Login/Signup
-/// - NO hover animations (works identical on mobile + web)
-/// - Press/Click zoom + soft “light-up” highlight (mobile + web)
-/// - Sticky centered glass header (no collision)
-/// - Full page code (no missing helpers)
+/// ✅ Premium Profile Screen (Your Light Theme)
+/// - Uses AppColors from your file (primary/secondary/other, bg1/bg2/bg3, ink/muted)
+/// - No hover; press glow + scale works on mobile + web
+/// - Sticky centered glass header
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -23,7 +21,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with TickerProviderStateMixin {
   // Entrance
   late final AnimationController _enterCtrl;
   late final Animation<double> _fade;
@@ -79,22 +78,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 18.0;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bg3,
       body: Stack(
         children: [
-          // ✅ Animated premium gradient background (same family as Login/Signup)
+          // ✅ Use your theme’s base gradient
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (context, _) {
+              // Subtle animated lerp between bg tones (keeps your palette)
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color.lerp(const Color(0xFFF5F8FF), const Color(0xFFEAF0FF), _bgT.value)!,
-                      Color.lerp(const Color(0xFFEFF6FF), const Color(0xFFFBEFFF), _bgT.value)!,
-                      Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFF1F4FF), _bgT.value)!,
+                      Color.lerp(AppColors.bg3, AppColors.bg2, _bgT.value)!,
+                      Color.lerp(AppColors.bg2, AppColors.bg1, _bgT.value)!,
+                      AppColors.bg3,
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -103,27 +103,30 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             },
           ),
 
-          // ✅ Soft haze overlay (premium glass atmosphere)
+          // ✅ Soft haze overlay
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
               builder: (context, _) {
                 final t = _floatT.value;
                 return Opacity(
-                  opacity: 0.10,
+                  opacity: 0.08,
                   child: Transform.translate(
-                    offset: Offset(lerpDouble(-16, 16, t)!, lerpDouble(10, -10, t)!),
+                    offset: Offset(
+                      lerpDouble(-16, 16, t)!,
+                      lerpDouble(10, -10, t)!,
+                    ),
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: RadialGradient(
-                          center: Alignment(0.14, -0.55),
+                          center: const Alignment(0.14, -0.55),
                           radius: 1.25,
                           colors: [
-                            Color(0xFFB9C7FF),
-                            Color(0xFFBCE9FF),
+                            AppColors.primary.withOpacity(0.30),
+                            AppColors.other.withOpacity(0.18),
                             Colors.transparent,
                           ],
-                          stops: [0.0, 0.42, 1.0],
+                          stops: const [0.0, 0.45, 1.0],
                         ),
                       ),
                     ),
@@ -133,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
           ),
 
-          // ✅ Floating glow blobs (Nexora vibe)
+          // ✅ Glow blobs using your brand colors
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -145,19 +148,25 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       dx: lerpDouble(-44, 26, t)!,
                       dy: lerpDouble(92, 62, t)!,
                       size: 240,
-                      opacity: 0.15,
+                      opacity: 0.14,
+                      a: AppColors.secondary,
+                      b: AppColors.other,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(230, 300, t)!,
                       dy: lerpDouble(260, 210, t)!,
                       size: 290,
-                      opacity: 0.12,
+                      opacity: 0.11,
+                      a: AppColors.primary,
+                      b: AppColors.secondary,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(160, 220, 1 - t)!,
                       dy: lerpDouble(40, 20, t)!,
                       size: 220,
-                      opacity: 0.10,
+                      opacity: 0.09,
+                      a: AppColors.other,
+                      b: AppColors.primary,
                     ),
                   ],
                 );
@@ -165,10 +174,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
           ),
 
-          // ✅ Top Cap (same cut / premium)
+          // ✅ Top Cap
           const _ProfileTopCap(baseHeight: _capBaseH),
 
-          // ✅ Scroll content (pushed down; no collision)
+          // ✅ Scroll content
           FadeTransition(
             opacity: _fade,
             child: SlideTransition(
@@ -269,7 +278,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
                     const SizedBox(height: 22),
 
-                    // ✅ Premium logout button (light theme – matches Nexora)
                     _logoutButton(),
 
                     const SizedBox(height: 12),
@@ -280,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMid.withOpacity(0.85),
+                          color: AppColors.ink.withOpacity(0.45),
                         ),
                       ),
                     ),
@@ -290,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
           ),
 
-          // ✅ Sticky centered header (glassy, premium, click animations)
+          // ✅ Sticky centered header
           _stickyCenteredHeader(context),
         ],
       ),
@@ -316,18 +324,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               child: _PressGlowScale(
                 onTap: () => Navigator.maybePop(context),
                 borderRadius: BorderRadius.circular(14),
-                child: _GlassIconSquare(icon: Icons.arrow_back_rounded),
+                child: const _GlassIconSquare(icon: Icons.arrow_back_rounded),
               ),
             ),
-
             const _Title3DCentered(text: "PROFILE", fontSize: 22),
-
             Align(
               alignment: Alignment.centerRight,
               child: _PressGlowScale(
                 onTap: () {},
                 borderRadius: BorderRadius.circular(14),
-                child: _GlassIconSquare(icon: Icons.settings_outlined),
+                child: const _GlassIconSquare(icon: Icons.settings_outlined),
               ),
             ),
           ],
@@ -340,10 +346,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Widget _profileHeader() {
     return _PressGlowScale(
-      onTap: () {
-        HapticFeedback.selectionClick();
-      },
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      onTap: () => HapticFeedback.selectionClick(),
+      borderRadius: BorderRadius.circular(18),
       child: _GlassCard(
         floatingT: _floatT.value,
         padding: const EdgeInsets.all(16),
@@ -360,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     style: GoogleFonts.manrope(
                       fontSize: 16.2,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textDark,
+                      color: AppColors.ink,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -370,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     style: GoogleFonts.manrope(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textMid,
+                      color: AppColors.ink.withOpacity(0.55),
                     ),
                   ),
                 ],
@@ -383,9 +387,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.chipFill.withOpacity(0.9),
+                  color: Colors.white.withOpacity(0.72),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.divider.withOpacity(0.85)),
+                  border: Border.all(color: AppColors.borderBase(0.70)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.08),
@@ -399,7 +403,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                   ],
                 ),
-                child: Icon(Icons.edit_outlined, color: AppColors.textDark.withOpacity(0.92), size: 20),
+                child: Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.ink.withOpacity(0.92),
+                  size: 20,
+                ),
               ),
             ),
           ],
@@ -416,11 +424,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     required Widget child,
   }) {
     return _PressGlowScale(
-      onTap: () {
-        // subtle feedback when tapping the card container itself
-        HapticFeedback.selectionClick();
-      },
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      onTap: () => HapticFeedback.selectionClick(),
+      borderRadius: BorderRadius.circular(18),
       downScale: 0.994,
       glowOpacity: 0.10,
       child: _GlassCard(
@@ -429,10 +434,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title row (3D + subtitle)
             Row(
               children: [
-                _SectionIconPuck(),
+                const _SectionIconPuck(),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -443,7 +447,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         style: GoogleFonts.manrope(
                           fontSize: 16.5,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
+                          color: AppColors.ink,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -453,7 +457,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         style: GoogleFonts.manrope(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMid.withOpacity(0.90),
+                          color: AppColors.ink.withOpacity(0.55),
                         ),
                       ),
                     ],
@@ -480,7 +484,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }) {
     return _PressGlowScale(
       enabled: !disabled,
-      onTap: disabled ? null : () {
+      onTap: disabled
+          ? null
+          : () {
         HapticFeedback.lightImpact();
         onTap();
       },
@@ -502,8 +508,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     style: GoogleFonts.manrope(
                       fontSize: 14.4,
                       fontWeight: FontWeight.w900,
-                      color: disabled ? AppColors.textMid : AppColors.textDark,
-                      letterSpacing: -0.15,
+                      color: disabled
+                          ? AppColors.ink.withOpacity(0.45)
+                          : AppColors.ink,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -514,7 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textMid,
+                      color: AppColors.ink.withOpacity(0.55),
                       height: 1.2,
                     ),
                   ),
@@ -524,8 +531,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             Icon(
               Icons.chevron_right_rounded,
               color: disabled
-                  ? AppColors.textMid.withOpacity(0.70)
-                  : AppColors.textDark.withOpacity(0.75),
+                  ? AppColors.ink.withOpacity(0.35)
+                  : AppColors.ink.withOpacity(0.70),
             ),
           ],
         ),
@@ -538,32 +545,29 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _logoutButton() {
     return _PressGlowScale(
       onTap: () {},
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: BorderRadius.circular(22),
       downScale: 0.988,
       glowOpacity: 0.14,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r22),
+        borderRadius: BorderRadius.circular(22),
         child: Stack(
           children: [
-            // blur base
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                 child: const SizedBox.expand(),
               ),
             ),
-
-            // premium light gradient (NOT dark)
             Container(
               height: 56,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
+                borderRadius: BorderRadius.circular(22),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFFF3ECFF).withOpacity(0.95),
-                    const Color(0xFFEAF3FF).withOpacity(0.92),
+                    AppColors.bg2.withOpacity(0.95),
+                    Colors.white.withOpacity(0.92),
                   ],
                 ),
                 border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.2),
@@ -577,12 +581,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               ),
               child: Stack(
                 children: [
-                  // specular highlight
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppRadius.r22),
+                          borderRadius: BorderRadius.circular(22),
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -597,43 +600,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       ),
                     ),
                   ),
-
-                  // subtle shine stripe
-                  Positioned(
-                    left: -40,
-                    top: 0,
-                    bottom: 0,
-                    child: IgnorePointer(
-                      child: Transform.rotate(
-                        angle: -0.25,
-                        child: Container(
-                          width: 140,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.0),
-                                Colors.white.withOpacity(0.55),
-                                Colors.white.withOpacity(0.0),
-                              ],
-                              stops: const [0.2, 0.5, 0.8],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
                   Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.logout_rounded, color: const Color(0xFF2D1B69).withOpacity(0.92), size: 18),
+                        Icon(Icons.logout_rounded,
+                            color: AppColors.secondary.withOpacity(0.92),
+                            size: 18),
                         const SizedBox(width: 10),
                         Text(
                           "Log out",
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2D1B69).withOpacity(0.92),
+                            color: AppColors.secondary.withOpacity(0.92),
                             fontSize: 15,
                             letterSpacing: 0.2,
                           ),
@@ -672,23 +651,8 @@ class _ProfileTopCap extends StatelessWidget {
         child: Container(
           height: baseHeight + topInset,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withOpacity(0.92),
-                Colors.white.withOpacity(0.56),
-                Colors.white.withOpacity(0.16),
-              ],
-              stops: const [0.0, 0.6, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.035),
-                blurRadius: 42,
-                offset: const Offset(0, 14),
-              ),
-            ],
+            color: Colors.white,
+            boxShadow: AppShadows.topCap,
           ),
         ),
       ),
@@ -721,7 +685,7 @@ class _HeaderClipper extends CustomClipper<Path> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PREMIUM HELPERS (NO HOVER)
+// HELPERS (NO HOVER)
 // ─────────────────────────────────────────────────────────────
 
 class _GlassHeaderShell extends StatelessWidget {
@@ -752,7 +716,6 @@ class _GlassHeaderShell extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // specular highlight
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
@@ -793,7 +756,7 @@ class _GlassIconSquare extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.74),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider.withOpacity(0.70)),
+        border: Border.all(color: AppColors.borderBase(0.70)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -807,18 +770,22 @@ class _GlassIconSquare extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(icon, color: AppColors.textDark),
+      child: Icon(icon, color: AppColors.ink),
     );
   }
 }
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -834,8 +801,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFF7EDCFF).withOpacity(opacity * 0.70),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.65),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],
@@ -865,13 +832,13 @@ class _GlassCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: BorderRadius.circular(18),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r18),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white.withOpacity(0.62), width: 1.1),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -891,12 +858,11 @@ class _GlassCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // specular highlight
                 Positioned.fill(
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.r18),
+                        borderRadius: BorderRadius.circular(18),
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -922,7 +888,6 @@ class _GlassCard extends StatelessWidget {
 }
 
 /// ✅ Press/Click zoom + light-up glow (mobile + web)
-/// No hover. Works on both.
 class _PressGlowScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -970,7 +935,7 @@ class _PressGlowScaleState extends State<_PressGlowScale> {
           boxShadow: _down
               ? [
             BoxShadow(
-              color: const Color(0xFF6B7CFF).withOpacity(widget.glowOpacity),
+              color: AppColors.secondary.withOpacity(widget.glowOpacity),
               blurRadius: 28,
               offset: const Offset(0, 16),
             ),
@@ -1011,25 +976,28 @@ class _Title3DCentered extends StatelessWidget {
               ),
             ),
           ),
-        Text(
-          text,
-          style: GoogleFonts.manrope(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-            color: const Color(0xFF1E2235),
-            shadows: [
-              Shadow(
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
-              ),
-              Shadow(
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
+        ShaderMask(
+          shaderCallback: (rect) => AppColors.brandLinear.createShader(rect),
+          child: Text(
+            text,
+            style: GoogleFonts.manrope(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.6,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                  color: AppColors.secondary.withOpacity(0.18),
+                ),
+                Shadow(
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.10),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1049,11 +1017,7 @@ class _Avatar3D extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFBFA8FF), Color(0xFFAEDBFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.brandLinear,
         border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.1),
         boxShadow: [
           BoxShadow(
@@ -1074,7 +1038,7 @@ class _Avatar3D extends StatelessWidget {
         style: GoogleFonts.manrope(
           fontSize: 20,
           fontWeight: FontWeight.w900,
-          color: const Color(0xFF2D1B69),
+          color: Colors.white,
         ),
       ),
     );
@@ -1093,9 +1057,9 @@ class _IconBadge3D extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: AppColors.chipFill,
+        color: Colors.white.withOpacity(0.72),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.6)),
+        border: Border.all(color: AppColors.borderBase(0.72)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -1111,13 +1075,15 @@ class _IconBadge3D extends StatelessWidget {
       ),
       child: Icon(
         icon,
-        color: disabled ? AppColors.textMid : AppColors.textDark,
+        color: disabled ? AppColors.ink.withOpacity(0.45) : AppColors.ink,
       ),
     );
   }
 }
 
 class _SectionIconPuck extends StatelessWidget {
+  const _SectionIconPuck();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1125,13 +1091,13 @@ class _SectionIconPuck extends StatelessWidget {
       height: 34,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: const Color(0xFFF8FAFC).withOpacity(0.62),
+        color: Colors.white.withOpacity(0.62),
         border: Border.all(color: Colors.white.withOpacity(0.75), width: 1.0),
       ),
       child: Icon(
         Icons.auto_awesome_rounded,
         size: 18,
-        color: const Color(0xFF6B7CFF).withOpacity(0.85),
+        color: AppColors.secondary.withOpacity(0.85),
       ),
     );
   }
@@ -1145,7 +1111,7 @@ class _SoftDivider extends StatelessWidget {
     return Divider(
       height: 18,
       thickness: 1,
-      color: AppColors.divider.withOpacity(0.65),
+      color: AppColors.borderBase(0.70),
     );
   }
 }

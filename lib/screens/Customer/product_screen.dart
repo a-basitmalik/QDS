@@ -119,7 +119,7 @@ class _ProductScreenState extends State<ProductScreen>
     final topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bg1,
       body: Stack(
         children: [
           _animatedBackground(),
@@ -137,28 +137,20 @@ class _ProductScreenState extends State<ProductScreen>
                   children: [
                     _galleryCard(),
                     const SizedBox(height: 14),
-
                     _headerCard(),
                     const SizedBox(height: 14),
-
                     _priceQtyCard(),
                     const SizedBox(height: 14),
-
                     _deliveryCard(),
                     const SizedBox(height: 14),
-
                     _sizesCard(),
                     const SizedBox(height: 14),
-
                     _variantsCard(),
                     const SizedBox(height: 14),
-
                     _stockCard(),
                     const SizedBox(height: 14),
-
                     _detailsCard(),
                     const SizedBox(height: 16),
-
                     _reviewsCard(),
                     const SizedBox(height: 34),
                   ],
@@ -170,16 +162,17 @@ class _ProductScreenState extends State<ProductScreen>
           _topBar(context),
           _premiumBottomCTA(context),
 
-          if (_showAddedSheet) _AddedToCartBottomSheet(
-            onFinished: () {
-              if (!mounted) return;
-              setState(() => _showAddedSheet = false);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CartCheckoutScreen()),
-              );
-            },
-          ),
+          if (_showAddedSheet)
+            _AddedToCartBottomSheet(
+              onFinished: () {
+                if (!mounted) return;
+                setState(() => _showAddedSheet = false);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CartCheckoutScreen()),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -191,15 +184,16 @@ class _ProductScreenState extends State<ProductScreen>
     return AnimatedBuilder(
       animation: _ambientCtrl,
       builder: (context, _) {
+        final t = _bgT.value;
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFEFF1FF), _bgT.value)!,
-                Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFFBEFFF), _bgT.value)!,
-                const Color(0xFFF7F7FA),
+                Color.lerp(AppColors.bg3, AppColors.bg2, t)!,
+                Color.lerp(AppColors.bg2, AppColors.bg1, t)!,
+                AppColors.bg3,
               ],
               stops: const [0.0, 0.55, 1.0],
             ),
@@ -221,19 +215,25 @@ class _ProductScreenState extends State<ProductScreen>
                 dx: lerpDouble(-50, 24, t)!,
                 dy: lerpDouble(90, 66, t)!,
                 size: 240,
-                opacity: 0.14,
+                opacity: 0.12,
+                a: AppColors.secondary,
+                b: AppColors.other,
               ),
               _GlowBlob(
                 dx: lerpDouble(250, 300, t)!,
                 dy: lerpDouble(280, 220, t)!,
-                size: 280,
-                opacity: 0.11,
+                size: 290,
+                opacity: 0.10,
+                a: AppColors.primary,
+                b: AppColors.secondary,
               ),
               _GlowBlob(
                 dx: lerpDouble(120, 140, t)!,
                 dy: lerpDouble(520, 560, t)!,
                 size: 240,
-                opacity: 0.09,
+                opacity: 0.08,
+                a: AppColors.other,
+                b: AppColors.secondary,
               ),
             ],
           );
@@ -251,7 +251,7 @@ class _ProductScreenState extends State<ProductScreen>
       child: Column(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
+            borderRadius: AppRadius.r22,
             child: AspectRatio(
               aspectRatio: 1.05,
               child: PageView.builder(
@@ -262,10 +262,7 @@ class _ProductScreenState extends State<ProductScreen>
                   return Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        _images[i],
-                        fit: BoxFit.cover,
-                      ),
+                      Image.network(_images[i], fit: BoxFit.cover),
 
                       // Premium top highlight
                       Positioned.fill(
@@ -320,7 +317,6 @@ class _ProductScreenState extends State<ProductScreen>
               ),
             ),
           ),
-
           const SizedBox(height: 12),
 
           // Dots
@@ -337,13 +333,12 @@ class _ProductScreenState extends State<ProductScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
                   color: active
-                      ? const Color(0xFF111827).withOpacity(0.85)
+                      ? AppColors.ink.withOpacity(0.85)
                       : AppColors.divider.withOpacity(0.9),
                 ),
               );
             }),
           ),
-
           const SizedBox(height: 12),
 
           // Thumbnails
@@ -377,7 +372,7 @@ class _ProductScreenState extends State<ProductScreen>
                         colors: active
                             ? [
                           Colors.white.withOpacity(0.88),
-                          const Color(0xFFF0F2FF).withOpacity(0.82),
+                          AppColors.bg2.withOpacity(0.82),
                         ]
                             : [
                           Colors.white.withOpacity(0.62),
@@ -386,7 +381,7 @@ class _ProductScreenState extends State<ProductScreen>
                       ),
                       border: Border.all(
                         color: active
-                            ? const Color(0xFF111827).withOpacity(0.22)
+                            ? AppColors.ink.withOpacity(0.22)
                             : AppColors.divider.withOpacity(0.9),
                         width: active ? 1.4 : 1.0,
                       ),
@@ -414,10 +409,7 @@ class _ProductScreenState extends State<ProductScreen>
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        _images[i],
-                        fit: BoxFit.cover,
-                      ),
+                      child: Image.network(_images[i], fit: BoxFit.cover),
                     ),
                   ),
                 );
@@ -459,13 +451,7 @@ class _ProductScreenState extends State<ProductScreen>
         color: Colors.white.withOpacity(0.62),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.divider.withOpacity(0.9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: _S.shadowSm,
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -482,17 +468,16 @@ class _ProductScreenState extends State<ProductScreen>
   }
 
   Widget _stockPill(bool inStock) {
+    final ok = AppColors.success;
+    final warn = AppColors.warning;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: inStock
-            ? const Color(0xFF0F7A3B).withOpacity(0.12)
-            : Colors.orange.withOpacity(0.14),
+        color: inStock ? ok.withOpacity(0.12) : warn.withOpacity(0.14),
         border: Border.all(
-          color: inStock
-              ? const Color(0xFF0F7A3B).withOpacity(0.22)
-              : Colors.orange.withOpacity(0.22),
+          color: inStock ? ok.withOpacity(0.22) : warn.withOpacity(0.22),
         ),
       ),
       child: Text(
@@ -500,7 +485,7 @@ class _ProductScreenState extends State<ProductScreen>
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w900,
-          color: inStock ? const Color(0xFF0F7A3B) : Colors.orange,
+          color: inStock ? ok : warn,
         ),
       ),
     );
@@ -521,46 +506,33 @@ class _ProductScreenState extends State<ProductScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Rs. ${_format(_price)}",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
-                  ),
-                ),
+                Text("Rs. ${_format(_price)}", style: AppText.h2()),
                 const SizedBox(height: 6),
                 Row(
                   children: [
                     Text(
                       "Rs. ${_format(_oldPrice)}",
-                      style: const TextStyle(
+                      style: AppText.subtle().copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textMid,
                         decoration: TextDecoration.lineThrough,
+                        color: AppColors.ink.withOpacity(0.55),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(999),
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF111827),
-                            const Color(0xFF3A3F67),
-                          ],
+                          colors: [AppColors.primary, AppColors.secondary],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.18),
-                            blurRadius: 14,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                        boxShadow: _S.shadowSmStrong,
                       ),
                       child: Text(
                         "$discount% off",
@@ -592,19 +564,7 @@ class _ProductScreenState extends State<ProductScreen>
             borderRadius: BorderRadius.circular(999),
             color: Colors.white.withOpacity(0.62),
             border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 12),
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.75),
-                blurRadius: 12,
-                offset: const Offset(0, -6),
-                spreadRadius: -6,
-              ),
-            ],
+            boxShadow: _S.shadowCard,
           ),
           child: Row(
             children: [
@@ -612,9 +572,10 @@ class _ProductScreenState extends State<ProductScreen>
                 onTap: () {
                   if (_qty > 1) setState(() => _qty--);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Icon(Icons.remove_rounded, size: 18),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(Icons.remove_rounded,
+                      size: 18, color: AppColors.ink),
                 ),
               ),
               SizedBox(
@@ -622,19 +583,20 @@ class _ProductScreenState extends State<ProductScreen>
                 child: Center(
                   child: Text(
                     _qty.toString(),
-                    style: const TextStyle(
+                    style: AppText.body().copyWith(
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textDark,
+                      color: AppColors.ink.withOpacity(0.92),
                     ),
                   ),
                 ),
               ),
               _PressScale(
                 onTap: () => setState(() => _qty++),
-                child: const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Icon(Icons.add_rounded, size: 18),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child:
+                  Icon(Icons.add_rounded, size: 18, color: AppColors.ink),
                 ),
               ),
             ],
@@ -658,10 +620,10 @@ class _ProductScreenState extends State<ProductScreen>
           Expanded(
             child: Text(
               "$_eta • $_distance",
-              style: const TextStyle(
+              style: AppText.body().copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
+                color: AppColors.ink.withOpacity(0.92),
               ),
             ),
           ),
@@ -672,9 +634,13 @@ class _ProductScreenState extends State<ProductScreen>
               color: Colors.white.withOpacity(0.62),
               border: Border.all(color: AppColors.divider.withOpacity(0.92)),
             ),
-            child: const Text(
+            child: Text(
               "Live",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+              style: AppText.kicker().copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink.withOpacity(0.90),
+              ),
             ),
           ),
         ],
@@ -693,19 +659,13 @@ class _ProductScreenState extends State<ProductScreen>
           end: Alignment.bottomRight,
           colors: [
             Colors.white.withOpacity(0.88),
-            const Color(0xFFF0F2FF).withOpacity(0.78),
+            AppColors.bg2.withOpacity(0.78),
           ],
         ),
         border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: _S.shadowSm,
       ),
-      child: Icon(icon, color: AppColors.textDark),
+      child: Icon(icon, color: AppColors.ink),
     );
   }
 
@@ -769,7 +729,7 @@ class _ProductScreenState extends State<ProductScreen>
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: _inStock ? Colors.green : Colors.orange,
+              color: _inStock ? AppColors.success : AppColors.warning,
               shape: BoxShape.circle,
             ),
           ),
@@ -777,10 +737,10 @@ class _ProductScreenState extends State<ProductScreen>
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: AppText.body().copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
+                color: AppColors.ink.withOpacity(0.92),
               ),
             ),
           ),
@@ -793,9 +753,13 @@ class _ProductScreenState extends State<ProductScreen>
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.divider.withOpacity(0.92)),
               ),
-              child: const Text(
+              child: Text(
                 "Refresh",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                style: AppText.kicker().copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink.withOpacity(0.90),
+                ),
               ),
             ),
           ),
@@ -811,18 +775,18 @@ class _ProductScreenState extends State<ProductScreen>
       floatingT: _floatT.value,
       title: "Details",
       subtitle: "Product description",
-      child: const Text(
+      child: Text(
         "A premium everyday piece designed for comfort and style. "
             "Soft-touch materials, durable stitching, and a clean modern silhouette.\n\n"
             "• High quality finish\n"
             "• Comfortable fit\n"
             "• Long-lasting build\n"
             "• Easy to maintain",
-        style: TextStyle(
+        style: AppText.body().copyWith(
           fontSize: 13,
           height: 1.4,
           fontWeight: FontWeight.w700,
-          color: AppColors.textMid,
+          color: AppColors.ink.withOpacity(0.55),
         ),
       ),
     );
@@ -857,22 +821,16 @@ class _ProductScreenState extends State<ProductScreen>
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.r18),
+                  borderRadius: AppRadius.r18, // ✅ use theme radius
                   color: Colors.white.withOpacity(0.62),
                   border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+                  boxShadow: _S.shadowSm,
                 ),
-                child: const Text(
+                child: Text(
                   "See all reviews",
-                  style: TextStyle(
+                  style: AppText.body().copyWith(
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: AppColors.ink.withOpacity(0.92),
                   ),
                 ),
               ),
@@ -898,19 +856,7 @@ class _ProductScreenState extends State<ProductScreen>
             color: Colors.white.withOpacity(0.58),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.72),
-                blurRadius: 12,
-                offset: const Offset(0, -6),
-                spreadRadius: -6,
-              ),
-            ],
+            boxShadow: _S.shadowCard,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -925,7 +871,7 @@ class _ProductScreenState extends State<ProductScreen>
                     end: Alignment.bottomRight,
                     colors: [
                       Colors.white.withOpacity(0.92),
-                      const Color(0xFFF0F2FF).withOpacity(0.78),
+                      AppColors.bg2.withOpacity(0.78),
                     ],
                   ),
                   border: Border.all(color: AppColors.divider.withOpacity(0.92)),
@@ -933,9 +879,9 @@ class _ProductScreenState extends State<ProductScreen>
                 alignment: Alignment.center,
                 child: Text(
                   name.characters.first.toUpperCase(),
-                  style: const TextStyle(
+                  style: AppText.body().copyWith(
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: AppColors.ink.withOpacity(0.92),
                   ),
                 ),
               ),
@@ -948,10 +894,10 @@ class _ProductScreenState extends State<ProductScreen>
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: AppText.body().copyWith(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textDark,
+                            color: AppColors.ink.withOpacity(0.92),
                           ),
                         ),
                         const Spacer(),
@@ -961,7 +907,9 @@ class _ProductScreenState extends State<ProductScreen>
                                 (i) => Icon(
                               Icons.star_rounded,
                               size: 14,
-                              color: i < rating ? Colors.amber : AppColors.divider,
+                              color: i < rating
+                                  ? Colors.amber
+                                  : AppColors.divider,
                             ),
                           ),
                         ),
@@ -970,10 +918,10 @@ class _ProductScreenState extends State<ProductScreen>
                     const SizedBox(height: 6),
                     Text(
                       text,
-                      style: const TextStyle(
+                      style: AppText.body().copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textMid,
+                        color: AppColors.ink.withOpacity(0.55),
                         height: 1.35,
                       ),
                     ),
@@ -999,7 +947,11 @@ class _ProductScreenState extends State<ProductScreen>
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        style: AppText.kicker().copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          color: AppColors.ink.withOpacity(0.90),
+        ),
       ),
     );
   }
@@ -1026,24 +978,13 @@ class _ProductScreenState extends State<ProductScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   Colors.white.withOpacity(0.76),
-                  const Color(0xFFF3F4F8).withOpacity(0.58),
+                  AppColors.bg2.withOpacity(0.58),
                   Colors.white.withOpacity(0.70),
                 ],
               ),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white.withOpacity(0.62)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 18,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: const Color(0xFF6B7CFF).withOpacity(0.08),
-                  blurRadius: 22,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              boxShadow: _S.shadowTopBar,
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -1062,7 +1003,9 @@ class _ProductScreenState extends State<ProductScreen>
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CartCheckoutScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CartCheckoutScreen(),
+                        ),
                       );
                     },
                     child: _iconPill(Icons.shopping_cart_outlined, badge: "3"),
@@ -1088,7 +1031,7 @@ class _ProductScreenState extends State<ProductScreen>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(icon, color: AppColors.textDark),
+          Icon(icon, color: AppColors.ink),
           if (badge != null)
             Positioned(
               right: 8,
@@ -1097,15 +1040,9 @@ class _ProductScreenState extends State<ProductScreen>
                 width: 16,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: AppColors.danger,
                   borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
-                      blurRadius: 10,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  boxShadow: _S.shadowBadge,
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -1144,57 +1081,37 @@ class _ProductScreenState extends State<ProductScreen>
               return Transform.translate(
                 offset: Offset(0, -lift + press + floatY),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.r14),
+                  borderRadius: AppRadius.r14,
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.r14),
+                        borderRadius: AppRadius.r14,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             Colors.white.withOpacity(0.70),
-                            const Color(0xFFF3F4F8).withOpacity(0.52),
+                            AppColors.bg2.withOpacity(0.52),
                             Colors.white.withOpacity(0.64),
                           ],
                         ),
-                        border: Border.all(color: Colors.white.withOpacity(0.70), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.14),
-                            blurRadius: 34,
-                            offset: const Offset(0, 22),
-                          ),
-                          BoxShadow(
-                            color: const Color(0xFF6B7CFF).withOpacity(0.10),
-                            blurRadius: 28,
-                            offset: const Offset(0, 18),
-                          ),
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.75),
-                            blurRadius: 18,
-                            offset: const Offset(0, -10),
-                            spreadRadius: -12,
-                          ),
-                        ],
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.70),
+                          width: 1.2,
+                        ),
+                        boxShadow: _S.shadowCtaBar,
                       ),
                       child: Row(
                         children: [
-                          // Total block
-                          Expanded(
-                            child: _totalMiniCard(),
-                          ),
+                          Expanded(child: _totalMiniCard()),
                           const SizedBox(width: 10),
-
-                          // Primary button
                           _PressScale(
                             onTap: _inStock
                                 ? () async {
                               await _ctaCtrl.forward();
                               await _ctaCtrl.reverse();
-
                               if (!mounted) return;
                               setState(() => _showAddedSheet = true);
                             }
@@ -1220,14 +1137,14 @@ class _ProductScreenState extends State<ProductScreen>
 
   Widget _totalMiniCard() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: AppRadius.r22,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
+            borderRadius: AppRadius.r22,
             color: Colors.white.withOpacity(0.62),
             border: Border.all(color: Colors.white.withOpacity(0.72)),
           ),
@@ -1242,14 +1159,18 @@ class _ProductScreenState extends State<ProductScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFFEFF1FF).withOpacity(0.9),
-                      Colors.white.withOpacity(0.7),
+                      AppColors.bg2.withOpacity(0.90),
+                      Colors.white.withOpacity(0.70),
                     ],
                   ),
                   border: Border.all(color: AppColors.divider.withOpacity(0.72)),
                 ),
                 alignment: Alignment.center,
-                child: const Icon(Icons.shopping_bag_outlined, color: AppColors.textDark, size: 22),
+                child: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.ink,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 10),
               Column(
@@ -1258,8 +1179,8 @@ class _ProductScreenState extends State<ProductScreen>
                 children: [
                   Text(
                     "TOTAL",
-                    style: TextStyle(
-                      color: AppColors.textMid.withOpacity(0.9),
+                    style: AppText.kicker().copyWith(
+                      color: AppColors.ink.withOpacity(0.55),
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.8,
@@ -1268,8 +1189,8 @@ class _ProductScreenState extends State<ProductScreen>
                   const SizedBox(height: 3),
                   Text(
                     "Rs. ${_format(total)}",
-                    style: const TextStyle(
-                      color: AppColors.textDark,
+                    style: AppText.body().copyWith(
+                      color: AppColors.ink.withOpacity(0.92),
                       fontSize: 15.5,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1285,53 +1206,29 @@ class _ProductScreenState extends State<ProductScreen>
 
   Widget _primaryCTAButton({required bool enabled, required String label}) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: AppRadius.r22,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
+            borderRadius: AppRadius.r22,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: enabled
-                  ? [
-                const Color(0xFF111827),
-                const Color(0xFF3A3F67),
-              ]
+                  ? [AppColors.primary, AppColors.secondary]
                   : [
-                const Color(0xFF9CA3AF).withOpacity(0.55),
-                const Color(0xFF6B7280).withOpacity(0.45),
+                AppColors.ink.withOpacity(0.20),
+                AppColors.ink.withOpacity(0.14),
               ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(enabled ? 0.22 : 0.12),
-                blurRadius: 26,
-                offset: const Offset(0, 18),
-              ),
-              if (enabled)
-                BoxShadow(
-                  color: const Color(0xFF6B7CFF).withOpacity(0.14),
-                  blurRadius: 28,
-                  offset: const Offset(0, 16),
-                  spreadRadius: -10,
-                ),
-              if (enabled)
-                BoxShadow(
-                  color: const Color(0xFFFF6BD6).withOpacity(0.10),
-                  blurRadius: 28,
-                  offset: const Offset(0, 16),
-                  spreadRadius: -12,
-                ),
-            ],
+            boxShadow: enabled ? _S.shadowCtaBtnEnabled : _S.shadowCtaBtnDisabled,
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // shine stripe
               Positioned.fill(
                 child: IgnorePointer(
                   child: Opacity(
@@ -1362,7 +1259,9 @@ class _ProductScreenState extends State<ProductScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    enabled ? Icons.add_shopping_cart_rounded : Icons.block_rounded,
+                    enabled
+                        ? Icons.add_shopping_cart_rounded
+                        : Icons.block_rounded,
                     size: 18,
                     color: Colors.white,
                   ),
@@ -1439,11 +1338,15 @@ class _PressScaleState extends State<_PressScale> {
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -1458,8 +1361,8 @@ class _GlowBlob extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: [
-              const Color(0xFF6B7CFF).withOpacity(opacity),
-              const Color(0xFFFF6BD6).withOpacity(opacity * 0.65),
+              a.withOpacity(opacity),
+              b.withOpacity(opacity * 0.65),
               Colors.transparent,
             ],
             stops: const [0.0, 0.55, 1.0],
@@ -1488,13 +1391,13 @@ class _GlassCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r22),
+        borderRadius: AppRadius.r22,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r22),
+              borderRadius: AppRadius.r22,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1503,20 +1406,8 @@ class _GlassCard extends StatelessWidget {
                   Colors.white.withOpacity(0.52),
                 ],
               ),
-              border: Border.all(color: Colors.white.withOpacity(0.68)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
-                  blurRadius: 28,
-                  offset: const Offset(0, 18),
-                ),
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.70),
-                  blurRadius: 16,
-                  offset: const Offset(0, -10),
-                  spreadRadius: -10,
-                ),
-              ],
+              border: Border.all(color: Colors.white.withOpacity(0.72)),
+              boxShadow: _S.shadowGlass,
             ),
             child: child,
           ),
@@ -1550,14 +1441,14 @@ class _SectionCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r22),
+        borderRadius: AppRadius.r22,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r22),
-              border: Border.all(color: Colors.white.withOpacity(0.65)),
+              borderRadius: AppRadius.r22,
+              border: Border.all(color: Colors.white.withOpacity(0.70)),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1566,13 +1457,7 @@ class _SectionCard extends StatelessWidget {
                   Colors.white.withOpacity(0.52),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+              boxShadow: _S.shadowMd,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1587,17 +1472,20 @@ class _SectionCard extends StatelessWidget {
                           titleWidget ??
                               Text(
                                 title ?? "",
-                                style: AppText.h18.copyWith(fontWeight: FontWeight.w900),
+                                style: AppText.h2().copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                           const SizedBox(height: 6),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: AppText.subtle().copyWith(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textMid,
+                              color: AppColors.ink.withOpacity(0.55),
                             ),
                           ),
                         ],
@@ -1640,42 +1528,28 @@ class _ChoiceChipNeo extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.r22),
+          borderRadius: AppRadius.r22,
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: active
-                ? [
-              const Color(0xFF111827),
-              const Color(0xFF3A3F67),
-            ]
+                ? [AppColors.primary, AppColors.secondary]
                 : [
               Colors.white.withOpacity(0.66),
               Colors.white.withOpacity(0.46),
             ],
           ),
-          border: Border.all(color: Colors.white.withOpacity(active ? 0.18 : 0.65)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(active ? 0.16 : 0.08),
-              blurRadius: active ? 22 : 16,
-              offset: const Offset(0, 14),
-            ),
-            if (!active)
-              BoxShadow(
-                color: Colors.white.withOpacity(0.70),
-                blurRadius: 14,
-                offset: const Offset(0, -8),
-                spreadRadius: -10,
-              ),
-          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(active ? 0.18 : 0.70),
+          ),
+          boxShadow: active ? _S.shadowChipActive : _S.shadowChipIdle,
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w900,
-            color: active ? Colors.white : AppColors.textDark,
+            color: active ? Colors.white : AppColors.ink,
           ),
         ),
       ),
@@ -1706,10 +1580,10 @@ class _TitleCaps3D extends StatelessWidget {
             ),
           ),
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
+          shaderCallback: (rect) => LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF111827), Color(0xFF3A3F67), Color(0xFF111827)],
+            colors: [AppColors.primary, AppColors.secondary, AppColors.primary],
           ).createShader(rect),
           child: Text(
             text,
@@ -1722,7 +1596,7 @@ class _TitleCaps3D extends StatelessWidget {
                 Shadow(
                   blurRadius: 18,
                   offset: const Offset(0, 10),
-                  color: const Color(0xFF6B7CFF).withOpacity(0.16),
+                  color: AppColors.secondary.withOpacity(0.16),
                 ),
                 Shadow(
                   blurRadius: 10,
@@ -1767,10 +1641,10 @@ class _Title3DHolo extends StatelessWidget {
             ),
           ),
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
+          shaderCallback: (rect) => LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF111827), Color(0xFF3A3F67), Color(0xFF111827)],
+            colors: [AppColors.primary, AppColors.secondary, AppColors.primary],
           ).createShader(rect),
           child: Text(
             text,
@@ -1785,7 +1659,7 @@ class _Title3DHolo extends StatelessWidget {
                 Shadow(
                   blurRadius: 18,
                   offset: const Offset(0, 10),
-                  color: const Color(0xFF6B7CFF).withOpacity(0.14),
+                  color: AppColors.secondary.withOpacity(0.14),
                 ),
                 Shadow(
                   blurRadius: 10,
@@ -1827,7 +1701,7 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
 
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400), // ✅ 2–3 sec feel
+      duration: const Duration(milliseconds: 2400),
     )..forward();
 
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
@@ -1840,7 +1714,6 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
     );
 
-    // Mark done near end + auto finish
     Future.delayed(const Duration(milliseconds: 1900), () {
       if (!mounted) return;
       setState(() => _done = true);
@@ -1897,28 +1770,10 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                             color: Colors.white.withOpacity(0.78),
                             width: 1.4,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.16),
-                              blurRadius: 40,
-                              offset: const Offset(0, 24),
-                            ),
-                            BoxShadow(
-                              color: const Color(0xFF6B7CFF).withOpacity(0.10),
-                              blurRadius: 28,
-                              offset: const Offset(0, 18),
-                            ),
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.86),
-                              blurRadius: 26,
-                              offset: const Offset(0, -14),
-                              spreadRadius: -14,
-                            ),
-                          ],
+                          boxShadow: _S.shadowSheet,
                         ),
                         child: Row(
                           children: [
-                            // Circle progress -> tick
                             SizedBox(
                               width: 52,
                               height: 52,
@@ -1927,15 +1782,17 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                                 children: [
                                   TweenAnimationBuilder<double>(
                                     tween: Tween(begin: 0.0, end: 1.0),
-                                    duration: const Duration(milliseconds: 1900),
+                                    duration:
+                                    const Duration(milliseconds: 1900),
                                     curve: Curves.easeOutCubic,
                                     builder: (_, v, __) {
                                       return CircularProgressIndicator(
                                         value: _done ? 1.0 : v,
                                         strokeWidth: 5,
-                                        backgroundColor: const Color(0xFF111827).withOpacity(0.08),
+                                        backgroundColor:
+                                        AppColors.ink.withOpacity(0.08),
                                         valueColor: AlwaysStoppedAnimation(
-                                          const Color(0xFF111827).withOpacity(0.78),
+                                          AppColors.ink.withOpacity(0.78),
                                         ),
                                       );
                                     },
@@ -1943,14 +1800,17 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                                   AnimatedScale(
                                     duration: const Duration(milliseconds: 280),
                                     curve: Curves.easeOutBack,
-                                    scale: _done ? lerpDouble(0.5, 1.0, _tickPop.value)! : 0.5,
+                                    scale: _done
+                                        ? lerpDouble(0.5, 1.0, _tickPop.value)!
+                                        : 0.5,
                                     child: AnimatedOpacity(
-                                      duration: const Duration(milliseconds: 180),
+                                      duration:
+                                      const Duration(milliseconds: 180),
                                       opacity: _done ? 1 : 0,
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.check_rounded,
                                         size: 26,
-                                        color: Color(0xFF111827),
+                                        color: AppColors.ink,
                                       ),
                                     ),
                                   ),
@@ -1958,7 +1818,6 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                               ),
                             ),
                             const SizedBox(width: 12),
-
                             Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -1966,40 +1825,45 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                                 children: [
                                   Text(
                                     _done ? "Added to cart" : "Adding to cart…",
-                                    style: const TextStyle(
+                                    style: AppText.body().copyWith(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w900,
-                                      color: Color(0xFF111827),
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    _done ? "Redirecting to checkout" : "Please wait a moment",
-                                    style: TextStyle(
+                                    _done
+                                        ? "Redirecting to checkout"
+                                        : "Please wait a moment",
+                                    style: AppText.subtle().copyWith(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF6B7280).withOpacity(0.95),
+                                      color: AppColors.ink.withOpacity(0.55),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 10),
-
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 9,
+                              ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(999),
                                 color: Colors.white.withOpacity(0.60),
-                                border: Border.all(color: const Color(0xFFD1D5DB).withOpacity(0.9)),
+                                border: Border.all(
+                                  color: AppColors.divider.withOpacity(0.90),
+                                ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 "Done",
-                                style: TextStyle(
+                                style: AppText.kicker().copyWith(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 12,
-                                  color: Color(0xFF111827),
+                                  color: AppColors.ink,
                                 ),
                               ),
                             ),
@@ -2016,4 +1880,172 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
       ),
     );
   }
+}
+
+/// ---------------------------------------------------------------------------
+/// Local shadows fallback (so this file compiles without importing app_shadows).
+/// If you already have AppShadows in your theme, you can delete this class and
+/// replace `_S.*` with your `AppShadows.*`.
+/// ---------------------------------------------------------------------------
+class _S {
+  static List<BoxShadow> get shadowSm => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 14,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowSmStrong => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.18),
+      blurRadius: 14,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowMd => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 24,
+      offset: const Offset(0, 16),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowGlass => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.10),
+      blurRadius: 28,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.70),
+      blurRadius: 16,
+      offset: const Offset(0, -10),
+      spreadRadius: -10,
+    ),
+  ];
+
+  static List<BoxShadow> get shadowCard => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 18,
+      offset: const Offset(0, 12),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.75),
+      blurRadius: 12,
+      offset: const Offset(0, -6),
+      spreadRadius: -6,
+    ),
+  ];
+
+  static List<BoxShadow> get shadowTopBar => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 18,
+      offset: const Offset(0, 12),
+    ),
+    BoxShadow(
+      color: AppColors.secondary.withOpacity(0.08),
+      blurRadius: 22,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowBadge => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.18),
+      blurRadius: 10,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowCtaBar => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.14),
+      blurRadius: 34,
+      offset: const Offset(0, 22),
+    ),
+    BoxShadow(
+      color: AppColors.secondary.withOpacity(0.10),
+      blurRadius: 28,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.75),
+      blurRadius: 18,
+      offset: const Offset(0, -10),
+      spreadRadius: -12,
+    ),
+  ];
+
+  static List<BoxShadow> get shadowCtaBtnEnabled => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.22),
+      blurRadius: 26,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: AppColors.secondary.withOpacity(0.14),
+      blurRadius: 28,
+      offset: const Offset(0, 16),
+      spreadRadius: -10,
+    ),
+    BoxShadow(
+      color: AppColors.other.withOpacity(0.10),
+      blurRadius: 28,
+      offset: const Offset(0, 16),
+      spreadRadius: -12,
+    ),
+  ];
+
+  static List<BoxShadow> get shadowCtaBtnDisabled => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.12),
+      blurRadius: 22,
+      offset: const Offset(0, 16),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowChipActive => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.16),
+      blurRadius: 22,
+      offset: const Offset(0, 14),
+    ),
+  ];
+
+  static List<BoxShadow> get shadowChipIdle => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 16,
+      offset: const Offset(0, 12),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.70),
+      blurRadius: 14,
+      offset: const Offset(0, -8),
+      spreadRadius: -10,
+    ),
+  ];
+
+  static List<BoxShadow> get shadowSheet => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.16),
+      blurRadius: 40,
+      offset: const Offset(0, 24),
+    ),
+    BoxShadow(
+      color: AppColors.secondary.withOpacity(0.10),
+      blurRadius: 28,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Colors.white.withOpacity(0.86),
+      blurRadius: 26,
+      offset: const Offset(0, -14),
+      spreadRadius: -14,
+    ),
+  ];
 }

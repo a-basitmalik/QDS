@@ -1,10 +1,13 @@
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
+import '../../theme/app_widgets.dart';
 
 enum OrderResultType {
   delivered,
@@ -78,27 +81,21 @@ class _OrderResultScreenState extends State<OrderResultScreen>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // ✅ Nexora animated background (same vibe as login)
+          // ✅ Theme-aligned animated background
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (context, _) {
+              final t = _bgT.value;
+
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFEFF1FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFFBEFFF),
-                        _bgT.value,
-                      )!,
-                      const Color(0xFFF7F7FA),
+                      Color.lerp(AppColors.bg3, AppColors.bg2, t)!,
+                      Color.lerp(AppColors.bg2, AppColors.bg1, t)!,
+                      AppColors.bg3,
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -107,7 +104,7 @@ class _OrderResultScreenState extends State<OrderResultScreen>
             },
           ),
 
-          // glow blobs
+          // glow blobs (now using your palette)
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -119,13 +116,17 @@ class _OrderResultScreenState extends State<OrderResultScreen>
                       dx: lerpDouble(-48, 18, t)!,
                       dy: lerpDouble(70, 50, t)!,
                       size: 260,
-                      opacity: 0.14,
+                      opacity: 0.12,
+                      a: AppColors.primary,
+                      b: AppColors.secondary,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(210, 290, t)!,
                       dy: lerpDouble(230, 195, t)!,
                       size: 300,
                       opacity: 0.10,
+                      a: AppColors.secondary,
+                      b: AppColors.other,
                     ),
                   ],
                 );
@@ -133,7 +134,7 @@ class _OrderResultScreenState extends State<OrderResultScreen>
             ),
           ),
 
-          // top cap (same shape)
+          // top cap (same shape, theme shadow)
           Positioned(
             top: -topInset,
             left: 0,
@@ -142,9 +143,9 @@ class _OrderResultScreenState extends State<OrderResultScreen>
               clipper: _HeaderClipper(),
               child: Container(
                 height: 155 + topInset,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  boxShadow: AppShadows.topCap,
+                  boxShadow: AppShadows.soft, // ✅ replaces missing topCap
                 ),
               ),
             ),
@@ -165,10 +166,8 @@ class _OrderResultScreenState extends State<OrderResultScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ✅ centered 3D heading (replaces old top title)
                     _CenteredHeader3D(type: widget.type),
                     const SizedBox(height: 16),
-
                     _resultCard(floatingT: _floatT.value),
                     const SizedBox(height: 18),
                     _actionButtons(context),
@@ -192,72 +191,53 @@ class _OrderResultScreenState extends State<OrderResultScreen>
 
     return Transform.translate(
       offset: Offset(0, floatY),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r18),
-              border: Border.all(color: Colors.white.withOpacity(0.62)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.72),
-                  Colors.white.withOpacity(0.48),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
-                  blurRadius: 22,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                _ResultIcon3D(config: config),
-                const SizedBox(height: 16),
-
-                // ✅ 3D title
-                _Title3D(
-                  config.title,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-
-                Text(
-                  config.message,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF7A7E92).withOpacity(0.95),
-                    height: 1.35,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 16),
-
-                // Order id pill (glassy)
-                _GlassSmallPill(
-                  child: Text(
-                    "Order ID: ${widget.orderId}",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E2235),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      child: Glass(
+        borderRadius: AppRadius.r18,
+        sigmaX: 16,
+        sigmaY: 16,
+        padding: const EdgeInsets.all(22),
+        color: Colors.white.withOpacity(0.62),
+        borderColor: Colors.white.withOpacity(0.72),
+        borderWidth: 1.1,
+        shadows: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 22,
+            offset: const Offset(0, 16),
           ),
+        ],
+        child: Column(
+          children: [
+            _ResultIcon3D(config: config),
+            const SizedBox(height: 16),
+
+            // ✅ 3D title
+            _Title3D(
+              config.title,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+
+            Text(
+              config.message,
+              style: AppText.body().copyWith(
+                fontSize: 13,
+                height: 1.35,
+                color: AppColors.ink.withOpacity(0.55),
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 16),
+
+            // ✅ Order id pill (use your widget)
+            GlassPill(
+              text: "Order ID: ${widget.orderId}",
+              onTap: () {}, // NOOP (keeps pill look, no behavior change)
+            ),
+          ],
         ),
       ),
     );
@@ -269,24 +249,45 @@ class _OrderResultScreenState extends State<OrderResultScreen>
     return Column(
       children: [
         if (widget.type == OrderResultType.delivered)
-          _PrimaryGlassButton(
-            label: "Track Order",
+          BrandButton(
+            text: "Track Order",
             onTap: () {
               // Navigator.push → OrderTrackingScreen
             },
           ),
 
         if (widget.type != OrderResultType.delivered)
-          _PrimaryGlassButton(
-            label: "Contact Support",
+          BrandButton(
+            text: "Contact Support",
             onTap: () {},
           ),
 
         const SizedBox(height: 12),
 
-        _SecondaryGlassButton(
-          label: "Back to Home",
+        // secondary glass button
+        PressScale(
+          borderRadius: AppRadius.r22,
+          downScale: 0.985,
           onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+          child: Glass(
+            borderRadius: AppRadius.r22,
+            sigmaX: 16,
+            sigmaY: 16,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            color: Colors.white.withOpacity(0.55),
+            borderColor: Colors.white.withOpacity(0.78),
+            borderWidth: 1.1,
+            shadows: AppShadows.soft,
+            child: Center(
+              child: Text(
+                "Back to Home",
+                style: AppText.button().copyWith(
+                  fontSize: 14,
+                  color: AppColors.ink.withOpacity(0.90),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -298,9 +299,29 @@ class _OrderResultScreenState extends State<OrderResultScreen>
     return Positioned(
       top: MediaQuery.of(context).padding.top + 10,
       left: 12,
-      child: _GlassIconPuck(
-        icon: Icons.arrow_back_ios_new_rounded,
+      child: PressScale(
+        borderRadius: AppRadius.pill(),
+        downScale: 0.96,
         onTap: () => Navigator.pop(context),
+        child: Glass(
+          borderRadius: AppRadius.pill(),
+          sigmaX: 14,
+          sigmaY: 14,
+          padding: const EdgeInsets.all(0),
+          color: Colors.white.withOpacity(0.58),
+          borderColor: Colors.white.withOpacity(0.74),
+          borderWidth: 1.1,
+          shadows: AppShadows.puck,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: AppColors.ink.withOpacity(0.72),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -353,7 +374,7 @@ class _ResultConfig {
 }
 
 // ============================================================================
-// ✅ New: centered 3D header (like login’s premium heading)
+// ✅ centered 3D header
 // ============================================================================
 
 class _CenteredHeader3D extends StatelessWidget {
@@ -380,7 +401,7 @@ class _CenteredHeader3D extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ New: 3D icon badge inside the card
+// ✅ 3D icon badge inside the card
 // ============================================================================
 
 class _ResultIcon3D extends StatelessWidget {
@@ -425,253 +446,7 @@ class _ResultIcon3D extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ Buttons (match login style: premium + depth)
-// ============================================================================
-
-class _PrimaryGlassButton extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _PrimaryGlassButton({required this.label, required this.onTap});
-
-  @override
-  State<_PrimaryGlassButton> createState() => _PrimaryGlassButtonState();
-}
-
-class _PrimaryGlassButtonState extends State<_PrimaryGlassButton> {
-  bool _hover = false;
-  bool _press = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = _hover || _press;
-    final scale = _press ? 0.97 : (_hover ? 1.03 : 1.0);
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() {
-        _hover = false;
-        _press = false;
-      }),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _press = true),
-        onTapUp: (_) => setState(() => _press = false),
-        onTapCancel: () => setState(() => _press = false),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          scale: scale,
-          child: Container(
-            height: 52,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r22),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF1E2235),
-                  Color.lerp(const Color(0xFF3A3F67), const Color(0xFF4B52A6), active ? 0.45 : 0.0)!,
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(active ? 0.18 : 0.14),
-                  blurRadius: active ? 18 : 16,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // glossy streak
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.r22),
-                    child: Opacity(
-                      opacity: 0.20,
-                      child: Transform.rotate(
-                        angle: -0.35,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.0),
-                                Colors.white.withOpacity(0.60),
-                                Colors.white.withOpacity(0.0),
-                              ],
-                              stops: const [0.25, 0.5, 0.75],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    widget.label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontSize: 14,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryGlassButton extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _SecondaryGlassButton({required this.label, required this.onTap});
-
-  @override
-  State<_SecondaryGlassButton> createState() => _SecondaryGlassButtonState();
-}
-
-class _SecondaryGlassButtonState extends State<_SecondaryGlassButton> {
-  bool _hover = false;
-  bool _press = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = _hover || _press;
-    final scale = _press ? 0.98 : (_hover ? 1.02 : 1.0);
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() {
-        _hover = false;
-        _press = false;
-      }),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _press = true),
-        onTapUp: (_) => setState(() => _press = false),
-        onTapCancel: () => setState(() => _press = false),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          scale: scale,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                height: 52,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(active ? 0.62 : 0.54),
-                  borderRadius: BorderRadius.circular(AppRadius.r22),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(active ? 0.78 : 0.62),
-                    width: active ? 1.2 : 1.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 14,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  widget.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E2235),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// ✅ Small glass pill for Order ID
-// ============================================================================
-
-class _GlassSmallPill extends StatelessWidget {
-  final Widget child;
-  const _GlassSmallPill({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.62)),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// ✅ Glass icon puck (same style you used earlier)
-// ============================================================================
-
-class _GlassIconPuck extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _GlassIconPuck({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Material(
-          color: Colors.white.withOpacity(0.55),
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.62)),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: const Color(0xFF1E2235).withOpacity(0.75),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// ✅ 3D Title (letter-by-letter extrusion)
+// ✅ 3D Title (letter-by-letter extrusion) - now theme ink
 // ============================================================================
 
 class _Title3D extends StatelessWidget {
@@ -689,7 +464,7 @@ class _Title3D extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const base = Color(0xFF1B1E2B);
+    final base = AppColors.ink;
 
     return Text.rich(
       TextSpan(
@@ -757,7 +532,7 @@ class _Title3D extends StatelessWidget {
 }
 
 // ============================================================================
-// TOP CAP CLIPPER (same as your other screens)
+// TOP CAP CLIPPER
 // ============================================================================
 
 class _HeaderClipper extends CustomClipper<Path> {
@@ -784,13 +559,21 @@ class _HeaderClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
+// ============================================================================
+// Glow blob (palette-aware)
+// ============================================================================
+
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -806,8 +589,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFFFF6BD6).withOpacity(opacity * 0.65),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.65),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],

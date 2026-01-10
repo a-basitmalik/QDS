@@ -16,12 +16,10 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMixin {
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Controllers (same vibe as Login)
-  // ─────────────────────────────────────────────────────────────────────────────
-  late final AnimationController _ambientCtrl; // background gradient + blobs
-  late final AnimationController _focusCtrl; // zoom when any field focused
-  late final AnimationController _btnCtrl; // 3D press
+  // Controllers
+  late final AnimationController _ambientCtrl;
+  late final AnimationController _focusCtrl;
+  late final AnimationController _btnCtrl;
 
   late final Animation<double> _bgT;
   late final Animation<double> _floatT;
@@ -31,9 +29,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
   late final Animation<double> _btnPress;
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // Form controllers
-  // ─────────────────────────────────────────────────────────────────────────────
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
@@ -42,7 +38,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   final cityCtrl = TextEditingController();
   final pinCtrl = TextEditingController();
 
-  // Focus nodes (for cursor-based zoom)
+  // Focus nodes
   final nameFocus = FocusNode();
   final emailFocus = FocusNode();
   final phoneFocus = FocusNode();
@@ -86,7 +82,6 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
       CurvedAnimation(parent: _btnCtrl, curve: Curves.easeOut),
     );
 
-    // Listen to focus changes (any field)
     for (final f in [
       nameFocus,
       emailFocus,
@@ -154,7 +149,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
       backgroundColor: AppColors.bg,
       body: Stack(
         children: [
-          // ✅ Same theme as Login: animated soft gradient (light indigo + soft pink)
+          // Animated soft gradient
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (context, _) {
@@ -164,21 +159,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color.lerp(
-                        const Color(0xFFF5F8FF),
-                        const Color(0xFFEAF0FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFEFF6FF),
-                        const Color(0xFFEAF9FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFF1F4FF),
-                        _bgT.value,
-                      )!,
+                      Color.lerp(const Color(0xFFF5F8FF), const Color(0xFFEAF0FF), _bgT.value)!,
+                      Color.lerp(const Color(0xFFEFF6FF), const Color(0xFFEAF9FF), _bgT.value)!,
+                      Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFF1F4FF), _bgT.value)!,
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -187,7 +170,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             },
           ),
 
-          // ✅ Subtle glass haze overlay
+          // Subtle haze overlay
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -196,20 +179,13 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                 return Opacity(
                   opacity: 0.10,
                   child: Transform.translate(
-                    offset: Offset(
-                      lerpDouble(-18, 18, t)!,
-                      lerpDouble(10, -10, t)!,
-                    ),
+                    offset: Offset(lerpDouble(-18, 18, t)!, lerpDouble(10, -10, t)!),
                     child: Container(
                       decoration: const BoxDecoration(
                         gradient: RadialGradient(
                           center: Alignment(0.2, -0.6),
                           radius: 1.25,
-                          colors: [
-                            Color(0xFFB9C7FF),
-                            Color(0xFFBCE9FF),
-                            Colors.transparent,
-                          ],
+                          colors: [Color(0xFFB9C7FF), Color(0xFFBCE9FF), Colors.transparent],
                           stops: [0.0, 0.42, 1.0],
                         ),
                       ),
@@ -220,7 +196,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             ),
           ),
 
-          // ✅ Soft floating glow blobs (same style)
+          // Glow blobs
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -228,31 +204,16 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                 final t = _floatT.value;
                 return Stack(
                   children: [
-                    _GlowBlob(
-                      dx: lerpDouble(-40, 20, t)!,
-                      dy: lerpDouble(90, 60, t)!,
-                      size: 230,
-                      opacity: 0.16,
-                    ),
-                    _GlowBlob(
-                      dx: lerpDouble(240, 285, t)!,
-                      dy: lerpDouble(250, 205, t)!,
-                      size: 280,
-                      opacity: 0.12,
-                    ),
-                    _GlowBlob(
-                      dx: lerpDouble(210, 250, 1 - t)!,
-                      dy: lerpDouble(35, 18, t)!,
-                      size: 210,
-                      opacity: 0.10,
-                    ),
+                    _GlowBlob(dx: lerpDouble(-40, 20, t)!, dy: lerpDouble(90, 60, t)!, size: 230, opacity: 0.16),
+                    _GlowBlob(dx: lerpDouble(240, 285, t)!, dy: lerpDouble(250, 205, t)!, size: 280, opacity: 0.12),
+                    _GlowBlob(dx: lerpDouble(210, 250, 1 - t)!, dy: lerpDouble(35, 18, t)!, size: 210, opacity: 0.10),
                   ],
                 );
               },
             ),
           ),
 
-          // ✅ Top cap (same)
+          // Top cap (remove const because AppShadows.topCap might not be const)
           Positioned(
             top: -topInset,
             left: 0,
@@ -261,7 +222,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               clipper: _HeaderCapClipper(),
               child: Container(
                 height: 150 + topInset,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: AppShadows.topCap,
                 ),
@@ -269,7 +230,6 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             ),
           ),
 
-          // Content
           SafeArea(child: _body()),
         ],
       ),
@@ -288,10 +248,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             children: [
               const SizedBox(height: 10),
 
-              // ✅ Header mini lockup like Login (no hover, press-only)
               _PressScale(
                 downScale: 0.992,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadius.pill(),
                 onTap: () => Navigator.pop(context),
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -299,20 +258,20 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.50),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppRadius.pill(),
                       border: Border.all(color: Colors.white.withOpacity(0.55)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.arrow_back_rounded, size: 18, color: Color(0xFF1E2235)),
+                        Icon(Icons.arrow_back_rounded, size: 18, color: AppColors.ink),
                         const SizedBox(width: 8),
                         Text(
                           "Back to sign in",
                           style: GoogleFonts.manrope(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF1E2235),
+                            color: AppColors.ink,
                           ),
                         ),
                       ],
@@ -323,11 +282,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
               const SizedBox(height: 14),
 
-              // ✅ Same heading vibe as Login: 3D extruded title
               const _Welcome3DTitle(text: "CREATE ACCOUNT"),
               const SizedBox(height: 18),
 
-              // ✅ Glass + focus zoom for the whole form stack
               Transform.translate(
                 offset: Offset(0, _focusLift.value),
                 child: Transform.scale(
@@ -376,12 +333,12 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               "Delivery essentials",
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.textMid,
+                                color: AppColors.muted, // ✅ theme
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -425,7 +382,6 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
                       const SizedBox(height: 18),
 
-                      // ✅ 3D glossy button (press-only) works for mobile+web
                       _Shiny3DButton(
                         controller: _btnCtrl,
                         pressT: _btnPress,
@@ -442,27 +398,27 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             "Already have an account?",
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textMid,
+                              color: AppColors.muted, // ✅ theme
                             ),
                           ),
                           const SizedBox(width: 8),
                           _PressScale(
                             downScale: 0.96,
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: AppRadius.pill(),
                             onTap: () => Navigator.pop(context),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              child: const Text(
+                              child: Text(
                                 "Sign in",
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.textDark,
+                                  color: AppColors.ink, // ✅ theme
                                 ),
                               ),
                             ),
@@ -504,7 +460,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               fontSize: 12.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,
-              color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
+              color: isFocused ? AppColors.ink : AppColors.muted,
             ),
             child: Text(label),
           ),
@@ -514,17 +470,15 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             border: Border.all(
-              color: isFocused
-                  ? const Color(0xFF6B7CFF).withOpacity(0.55)
-                  : AppColors.divider,
+              color: isFocused ? AppColors.secondary.withOpacity(0.55) : AppColors.borderBase(0.60),
               width: isFocused ? 1.3 : 1.0,
             ),
             boxShadow: isFocused
                 ? [
               BoxShadow(
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                color: AppColors.secondary.withOpacity(0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               )
@@ -532,7 +486,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                 : null,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Row(
@@ -541,7 +495,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                   Icon(
                     icon,
                     size: 18,
-                    color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
+                    color: isFocused ? AppColors.ink : AppColors.muted,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -549,10 +503,10 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                       focusNode: focusNode,
                       controller: controller,
                       keyboardType: keyboard,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
+                        color: AppColors.ink,
                       ),
                       decoration: InputDecoration(
                         hintText: hint,
@@ -589,7 +543,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               fontSize: 12.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,
-              color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
+              color: isFocused ? AppColors.ink : AppColors.muted,
             ),
             child: const Text("Password"),
           ),
@@ -599,17 +553,15 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             border: Border.all(
-              color: isFocused
-                  ? const Color(0xFF6B7CFF).withOpacity(0.55)
-                  : AppColors.divider,
+              color: isFocused ? AppColors.secondary.withOpacity(0.55) : AppColors.borderBase(0.60),
               width: isFocused ? 1.3 : 1.0,
             ),
             boxShadow: isFocused
                 ? [
               BoxShadow(
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                color: AppColors.secondary.withOpacity(0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               )
@@ -617,7 +569,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                 : null,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Row(
@@ -626,7 +578,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                   Icon(
                     Icons.lock_outline_rounded,
                     size: 18,
-                    color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
+                    color: isFocused ? AppColors.ink : AppColors.muted,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -634,10 +586,10 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                       focusNode: passFocus,
                       controller: passCtrl,
                       obscureText: obscure,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
+                        color: AppColors.ink,
                       ),
                       decoration: const InputDecoration(
                         hintText: "Create password",
@@ -655,7 +607,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                     icon: Icon(
                       obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
                       size: 18,
-                      color: AppColors.textMid,
+                      color: AppColors.muted,
                     ),
                     onPressed: () => setState(() => obscure = !obscure),
                   ),
@@ -672,26 +624,26 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   Widget _gpsDetect() {
     return _PressScale(
       downScale: 0.985,
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      borderRadius: AppRadius.r18, // ✅ fixed
       onTap: () {},
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          border: Border.all(color: AppColors.divider),
+          borderRadius: AppRadius.r18, // ✅ fixed
+          border: Border.all(color: AppColors.borderBase(0.65)),
           color: Colors.white.withOpacity(0.35),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.my_location_rounded, size: 18),
-            SizedBox(width: 10),
+          children: [
+            Icon(Icons.my_location_rounded, size: 18, color: AppColors.ink),
+            const SizedBox(width: 10),
             Text(
               "Auto-detect location",
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
+                color: AppColors.ink, // ✅ theme
               ),
             ),
           ],
@@ -701,9 +653,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRESS SCALE (NO HOVER) — works for mobile + web click/touch
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// PRESS SCALE (NO HOVER)
+// ─────────────────────────────────────────────────────────────
 
 class _PressScale extends StatefulWidget {
   final Widget child;
@@ -766,9 +718,9 @@ class _PressScaleState extends State<_PressScale> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SAME Helpers as Login
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
@@ -818,11 +770,11 @@ class _GlassCard extends StatelessWidget {
       offset: Offset(0, floatY),
       child: _PressScale(
         downScale: 0.992,
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18, // ✅ fixed
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             border: Border.all(color: Colors.white.withOpacity(0.55)),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -841,7 +793,7 @@ class _GlassCard extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18, // ✅ fixed
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: child,
@@ -871,7 +823,7 @@ class _Shiny3DButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final t = pressT.value; // 0..1
+        final t = pressT.value;
         final lift = lerpDouble(0, 3, 1 - t)!;
         final press = lerpDouble(0, 2.5, t)!;
 
@@ -885,14 +837,11 @@ class _Shiny3DButton extends StatelessWidget {
             child: Container(
               height: 54,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
+                borderRadius: AppRadius.r22, // ✅ fixed
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1E2235),
-                    Color(0xFF3A3F67),
-                  ],
+                  colors: [Color(0xFF1E2235), Color(0xFF3A3F67)],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -906,7 +855,7 @@ class _Shiny3DButton extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.r22),
+                      borderRadius: AppRadius.r22, // ✅ fixed
                       child: Opacity(
                         opacity: 0.22,
                         child: Transform.rotate(
@@ -979,12 +928,12 @@ class _Welcome3DTitle extends StatelessWidget {
             fontSize: 28,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.8,
-            color: const Color(0xFF1E2235),
+            color: AppColors.ink,
             shadows: [
               Shadow(
                 blurRadius: 18,
                 offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                color: AppColors.secondary.withOpacity(0.18),
               ),
               Shadow(
                 blurRadius: 10,

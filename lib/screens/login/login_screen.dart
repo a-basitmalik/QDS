@@ -1,12 +1,12 @@
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
-import '../../theme/app_text.dart';
 import '../../theme/app_shadows.dart';
 import '../Customer/home.dart';
 import '../auth/signup_screen.dart';
@@ -19,28 +19,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
-  // ─────────────────────────────────────────────────────────────────────────────
   // Controllers
-  // ─────────────────────────────────────────────────────────────────────────────
   late final AnimationController _introController;
   late final AnimationController _loginController;
 
-  // Ambient / background animation
   late final AnimationController _ambientCtrl;
-
-  // Focus zoom (when keyboard/cursor active)
   late final AnimationController _focusCtrl;
-
-  // Button 3D press
   late final AnimationController _btnCtrl;
 
-  // NEW: holographic shimmer for intro text
   late final AnimationController _holoCtrl;
   late final Animation<double> _holoT;
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // State
-  // ─────────────────────────────────────────────────────────────────────────────
   bool _showLoginForm = false;
 
   final emailCtrl = TextEditingController();
@@ -70,22 +60,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   late Animation<double> _introIconFade;
   late Animation<double> _introOverallFadeIn;
 
-  // Login reveal animations
+  // Login reveal
   late Animation<double> _headerFadeIn;
   late Animation<double> _headerSlideIn;
   late Animation<double> _formFadeIn;
   late Animation<double> _formSlideIn;
 
-  // Ambient animations
+  // Ambient
   late Animation<double> _bgT;
   late Animation<double> _floatT;
 
-  // Focus zoom animations
+  // Focus zoom
   late Animation<double> _focusZoom;
   late Animation<double> _focusLift;
 
-  // Button animations
+  // Button
   late Animation<double> _btnPress;
+
+  // Logo motion
+  late Animation<double> _logoX;
+  late Animation<double> _logoTilt;
+  late Animation<double> _logoSquash;
+  late Animation<double> _logoSkidT;
 
   static const Duration _introDuration = Duration(milliseconds: 6200);
   static const Duration _loginTransitionDuration = Duration(milliseconds: 1100);
@@ -161,16 +157,96 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // INTRO ANIMS (EXACT from your standalone)
+  // ─────────────────────────────────────────────────────────────
   void _setupIntroAnimations() {
     _introOverallFadeIn = CurvedAnimation(
       parent: _introController,
       curve: const Interval(0.00, 0.10, curve: Curves.easeOut),
     );
 
-    // Letter animations
+    const logoStart = 0.02;
+    const logoEnd = 0.32;
+
+    _logoX = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: -620.0, end: -70.0).chain(
+          CurveTween(curve: Cubic(0.08, 0.95, 0.18, 1.00)),
+        ),
+        weight: 58,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -70.0, end: 26.0).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 22,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 26.0, end: 0.0).chain(CurveTween(curve: Cubic(0.18, 0.00, 0.00, 1.00))),
+        weight: 20,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+    );
+
+    _logoTilt = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: -0.28, end: -0.06).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 55,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -0.06, end: 0.22).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.22, end: 0.0).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 25,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+    );
+
+    _logoSquash = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 1.00, end: 1.10).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 55,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.10, end: 0.92).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.92, end: 1.00).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 25,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+    );
+
+    _logoSkidT = CurvedAnimation(
+      parent: _introController,
+      curve: const Interval(0.20, 0.32, curve: Curves.linear),
+    );
+
+    _introIconFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _introController, curve: const Interval(0.03, 0.14, curve: Curves.easeOut)),
+    );
+
+    _introIconScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.92, end: 1.06).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 70,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.06, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 30,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _introController, curve: const Interval(0.06, 0.32, curve: Curves.easeOut)),
+    );
+
     final n = _brand.length;
-    const double lettersStart = 0.08;
-    const double lettersEnd = 0.55;
+    const double lettersStart = 0.35;
+    const double lettersEnd = 0.68;
     final double window = (lettersEnd - lettersStart) / (n + 1);
 
     _letters = List.generate(n, (i) {
@@ -205,98 +281,45 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       ]).animate(t);
 
       final opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _introController,
-          curve: Interval(s, min(s + window * 0.9, e), curve: Curves.easeOut),
-        ),
+        CurvedAnimation(parent: _introController, curve: Interval(s, min(s + window * 0.9, e), curve: Curves.easeOut)),
       );
 
       final blur = Tween<double>(begin: 8.0, end: 0.0).animate(
-        CurvedAnimation(
-          parent: _introController,
-          curve: Interval(s, e, curve: Curves.easeOut),
-        ),
+        CurvedAnimation(parent: _introController, curve: Interval(s, e, curve: Curves.easeOut)),
       );
 
-      return _LetterAnim(
-        char: _brand[i],
-        jumpY: jump,
-        scale: scale,
-        opacity: opacity,
-        blur: blur,
-      );
+      return _LetterAnim(char: _brand[i], jumpY: jump, scale: scale, opacity: opacity, blur: blur);
     });
 
     _introTagFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: const Interval(0.58, 0.72, curve: Curves.easeOut),
-      ),
+      CurvedAnimation(parent: _introController, curve: const Interval(0.70, 0.82, curve: Curves.easeOut)),
     );
 
     _introTagSlide = Tween<double>(begin: 10.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: const Interval(0.58, 0.72, curve: Curves.easeOutCubic),
-      ),
+      CurvedAnimation(parent: _introController, curve: const Interval(0.70, 0.82, curve: Curves.easeOutCubic)),
     );
 
     _introTagTypeT = CurvedAnimation(
       parent: _introController,
-      curve: const Interval(0.60, 0.80, curve: Curves.linear),
-    );
-
-    _introIconScale = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 0.85, end: 1.08).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.08, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 40,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: const Interval(0.78, 0.92, curve: Curves.easeOut),
-      ),
-    );
-
-    _introIconFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: const Interval(0.74, 0.90, curve: Curves.easeOut),
-      ),
+      curve: const Interval(0.72, 0.90, curve: Curves.linear),
     );
   }
 
   void _setupLoginAnimations() {
     _headerFadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _loginController,
-        curve: const Interval(0.05, 0.35, curve: Curves.easeIn),
-      ),
+      CurvedAnimation(parent: _loginController, curve: const Interval(0.05, 0.35, curve: Curves.easeIn)),
     );
 
     _headerSlideIn = Tween<double>(begin: -18.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _loginController,
-        curve: const Interval(0.05, 0.35, curve: Curves.easeOutCubic),
-      ),
+      CurvedAnimation(parent: _loginController, curve: const Interval(0.05, 0.35, curve: Curves.easeOutCubic)),
     );
 
     _formFadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _loginController,
-        curve: const Interval(0.22, 0.70, curve: Curves.easeIn),
-      ),
+      CurvedAnimation(parent: _loginController, curve: const Interval(0.22, 0.70, curve: Curves.easeIn)),
     );
 
     _formSlideIn = Tween<double>(begin: 22.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _loginController,
-        curve: const Interval(0.22, 0.70, curve: Curves.easeOutCubic),
-      ),
+      CurvedAnimation(parent: _loginController, curve: const Interval(0.22, 0.70, curve: Curves.easeOutCubic)),
     );
   }
 
@@ -334,134 +357,46 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          // ✅ Upgraded: glassy light-indigo + sky-blue background
-          AnimatedBuilder(
-            animation: _ambientCtrl,
-            builder: (context, _) {
-              final t = _bgT.value;
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.lerp(const Color(0xFFF5F8FF), const Color(0xFFEAF0FF), t)!,
-                      Color.lerp(const Color(0xFFEFF6FF), const Color(0xFFEAF9FF), t)!,
-                      Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFF1F4FF), t)!,
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // ✅ extra glass haze (subtle, premium)
-          IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _ambientCtrl,
-              builder: (context, _) {
-                final t = _floatT.value;
-                return Opacity(
-                  opacity: 0.10,
-                  child: Transform.translate(
-                    offset: Offset(lerpDouble(-18, 18, t)!, lerpDouble(10, -10, t)!),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: RadialGradient(
-                          center: Alignment(0.2, -0.6),
-                          radius: 1.25,
-                          colors: [
-                            Color(0xFFB9C7FF),
-                            Color(0xFFBCE9FF),
-                            Colors.transparent,
-                          ],
-                          stops: [0.0, 0.42, 1.0],
-                        ),
-                      ),
+      body: NexoraBackground(
+        child: Stack(
+          children: [
+            if (_showLoginForm)
+              Positioned(
+                top: -topInset,
+                left: 0,
+                right: 0,
+                child: ClipPath(
+                  clipper: _HeaderCapClipper(),
+                  child: Container(
+                    height: 170 + topInset,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.60),
+                      border: Border(bottom: BorderSide(color: AppColors.divider, width: 1)),
+                      boxShadow: AppShadows.topCap,
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // ✅ Floating glow blobs (kept, tuned slightly for indigo/sky)
-          IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _ambientCtrl,
-              builder: (context, _) {
-                final t = _floatT.value;
-                return Stack(
-                  children: [
-                    _GlowBlob(
-                      dx: lerpDouble(-50, 24, t)!,
-                      dy: lerpDouble(110, 70, t)!,
-                      size: 240,
-                      opacity: 0.16,
-                    ),
-                    _GlowBlob(
-                      dx: lerpDouble(240, 300, t)!,
-                      dy: lerpDouble(250, 205, t)!,
-                      size: 290,
-                      opacity: 0.12,
-                    ),
-                    // NEW: top-right cool blue blob
-                    _GlowBlob(
-                      dx: lerpDouble(220, 260, 1 - t)!,
-                      dy: lerpDouble(40, 20, t)!,
-                      size: 220,
-                      opacity: 0.10,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          // ✅ Top cap (kept)
-          if (_showLoginForm)
-            Positioned(
-              top: -topInset,
-              left: 0,
-              right: 0,
-              child: ClipPath(
-                clipper: _HeaderCapClipper(),
-                child: Container(
-                  height: 170 + topInset,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: AppShadows.topCap,
                   ),
                 ),
               ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 700),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeIn,
+              child: _showLoginForm ? _buildLoginScreen() : _buildIntroScreen(),
             ),
-
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 700),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeIn,
-            child: _showLoginForm ? _buildLoginScreen() : _buildIntroScreen(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // INTRO SCREEN (Upgraded holographic glass text)
-  // ─────────────────────────────────────────────────────────────────────────────
-
+  // INTRO
   Widget _buildIntroScreen() {
     return AnimatedBuilder(
       animation: Listenable.merge([_introController, _holoCtrl, _ambientCtrl]),
       builder: (context, _) {
-        final double introFade = _introOverallFadeIn.value.clamp(0.0, 1.0);
-
-        final int visibleChars = (_tagline.length * _introTagTypeT.value.clamp(0.0, 1.0)).round();
-        final String typed = visibleChars <= 0 ? "" : _tagline.substring(0, min(visibleChars, _tagline.length));
+        final introFade = _introOverallFadeIn.value.clamp(0.0, 1.0);
+        final visibleChars = (_tagline.length * _introTagTypeT.value.clamp(0.0, 1.0)).round();
+        final typed = visibleChars <= 0 ? "" : _tagline.substring(0, min(visibleChars, _tagline.length));
 
         return Opacity(
           opacity: introFade,
@@ -473,9 +408,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               iconFade: _introIconFade.value,
               tagFade: _introTagFade.value,
               tagSlide: _introTagSlide.value,
-              // NEW:
               holoT: _holoT.value,
               ambientT: _floatT.value,
+              logoSlideX: _logoX.value,
+              logoTilt: _logoTilt.value,
+              logoSquash: _logoSquash.value,
+              logoSkidT: _logoSkidT.value,
             ),
           ),
         );
@@ -483,10 +421,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // LOGIN SCREEN (kept same)
-  // ─────────────────────────────────────────────────────────────────────────────
-
+  // LOGIN
   Widget _buildLoginScreen() {
     return AnimatedBuilder(
       animation: Listenable.merge([_loginController, _focusCtrl, _ambientCtrl]),
@@ -496,7 +431,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         return SafeArea(
           child: Column(
             children: [
-              // Header (top-left)
               Transform.translate(
                 offset: Offset(0, _headerSlideIn.value),
                 child: Opacity(
@@ -505,11 +439,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
                     child: Row(
                       children: [
-                        Image.asset(
-                          "assets/logo.png",
+                        // brand icon card (no theme gradients required)
+                        Container(
                           width: 42,
                           height: 42,
-                          fit: BoxFit.contain,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              begin: Alignment(-1, -1),
+                              end: Alignment(1, 1),
+                              colors: [Color(0xFF5B7CFA), Color(0xFF8A5CFF)],
+                            ),
+                            border: Border.all(color: Colors.white.withOpacity(0.35)),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x1A000000), blurRadius: 22, offset: Offset(0, 16)),
+                              BoxShadow(color: Color(0x0C000000), blurRadius: 2, offset: Offset(0, 1)),
+                            ],
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: _LogoAssetOrFallback(size: 28),
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -519,24 +469,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             children: [
                               Text(
                                 "Nexora",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.manrope(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF1E2235),
+                                  color: AppColors.textDark,
                                   letterSpacing: -0.5,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Shopping that moves at your speed",
+                                _tagline,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.manrope(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF7A7E92),
+                                  color: AppColors.textMid,
                                 ),
                               ),
                             ],
@@ -547,8 +495,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // Body
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -562,13 +508,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           opacity: _formFadeIn.value,
                           child: const Column(
                             children: [
-                              _Welcome3DTitle(text: "WELCOME BACK"),
+                              _WelcomeSimpleTitle(text: "Welcome Back"),
                               SizedBox(height: 18),
                             ],
                           ),
                         ),
                       ),
-
                       Transform.translate(
                         offset: Offset(0, _formSlideIn.value + _focusLift.value),
                         child: Transform.scale(
@@ -585,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     ],
                   ),
                 ),
-              ),
+              )
             ],
           ),
         );
@@ -623,7 +568,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ),
         ),
         const SizedBox(height: 12),
-
         Row(
           children: [
             _buildRememberToggle(),
@@ -642,7 +586,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ],
         ),
         const SizedBox(height: 10),
-
         _Shiny3DButton(
           controller: _btnCtrl,
           pressT: _btnPress,
@@ -653,12 +596,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             _handleSignIn();
           },
         ),
-
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "Don't have an account?",
               style: TextStyle(
                 fontSize: 13,
@@ -666,21 +608,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 fontWeight: FontWeight.w600,
               ),
             ),
+
             TextButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SignupScreen()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
               },
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textDark,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              child: const Text(
-                "Create one",
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-              ),
+              child: const Text("Create one", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -702,19 +639,18 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: AppColors.divider),
             ),
-            child: remember
-                ? const Icon(Icons.check, color: Colors.white, size: 14)
-                : null,
+            child: remember ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             "Remember me",
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppColors.textMid,
+              color: AppColors.muted, // or AppColors.textMid if you use that
             ),
           ),
+
         ],
       ),
     );
@@ -743,22 +679,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               fontSize: 12.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,
-              color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
+              color: isFocused ? AppColors.textDark : AppColors.textMid,
             ),
             child: Text(label),
           ),
         ),
-
         AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18,
             border: Border.all(
-              color: isFocused
-                  ? const Color(0xFF6B7CFF).withOpacity(0.55)
-                  : AppColors.divider,
+              color: isFocused ? const Color(0xFF6B7CFF).withOpacity(0.55) : AppColors.divider,
               width: isFocused ? 1.3 : 1.0,
             ),
             boxShadow: isFocused
@@ -772,17 +705,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 : null,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.r18),
+            borderRadius: AppRadius.r18,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Row(
                 children: [
                   const SizedBox(width: 14),
-                  Icon(
-                    prefixIcon,
-                    size: 18,
-                    color: isFocused ? const Color(0xFF1E2235) : AppColors.textMid,
-                  ),
+                  Icon(prefixIcon, size: 18, color: isFocused ? AppColors.textDark : AppColors.textMid),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
@@ -790,11 +719,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       controller: controller,
                       keyboardType: keyboardType,
                       obscureText: obscureText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textDark,
                       ),
+
+
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintStyle: TextStyle(
@@ -827,10 +758,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
     switch (_staticRole) {
       case "customer":
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
         break;
       case "shop":
         _showError(context, "Shop portal coming soon");
@@ -856,38 +784,130 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Premium helpers
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────
+/// Background (clean premium blobs like standalone)
+/// ─────────────────────────────────────────────────────────────
+class NexoraBackground extends StatelessWidget {
+  final Widget child;
+  const NexoraBackground({super.key, required this.child});
 
-class _GlowBlob extends StatelessWidget {
-  final double dx, dy, size, opacity;
-  const _GlowBlob({
-    required this.dx,
-    required this.dy,
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(color: AppColors.bg),
+        const _RadialLayer(
+          alignment: Alignment(-0.65, -0.85),
+          size: 1100,
+          color: Color(0xBFEAF1FF),
+          stop: 0.65,
+        ),
+        const _RadialLayer(
+          alignment: Alignment(0.85, -0.85),
+          size: 900,
+          color: Color(0xCFEFE3FF),
+          stop: 0.62,
+        ),
+        const _RadialLayer(
+          alignment: Alignment(0.0, 0.95),
+          size: 1100,
+          color: Color(0xCFF2E9FF),
+          stop: 0.68,
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black.withOpacity(0.02), Colors.black.withOpacity(0.06)],
+                ),
+              ),
+            ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+class _RadialLayer extends StatelessWidget {
+  final Alignment alignment;
+  final double size;
+  final Color color;
+  final double stop;
+  const _RadialLayer({
+    required this.alignment,
     required this.size,
-    required this.opacity,
+    required this.color,
+    required this.stop,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: dx,
-      top: dy,
+    return Align(
+      alignment: alignment,
       child: IgnorePointer(
         child: Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFF7EDCFF).withOpacity(opacity * 0.70),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.55, 1.0],
+              colors: [color, color.withOpacity(0.0)],
+              stops: const [0.0, 1.0],
+              radius: stop,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ─────────────────────────────────────────────────────────────
+/// Glass + Card
+/// ─────────────────────────────────────────────────────────────
+class Glass extends StatelessWidget {
+  final Widget child;
+  final double radius;
+  final EdgeInsets padding;
+  final Color background;
+  final double blur;
+  final List<BoxShadow> shadows;
+  final BoxBorder? border;
+
+  const Glass({
+    super.key,
+    required this.child,
+    required this.radius,
+    required this.padding,
+    required this.background,
+    required this.blur,
+    required this.shadows,
+    this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: shadows,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(radius),
+              border: border,
+            ),
+            child: child,
           ),
         ),
       ),
@@ -902,43 +922,29 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final floatY = sin(floatingT * pi * 2) * 5.0;
+    final floatY = sin(floatingT * pi * 2) * 2.0;
 
     return Transform.translate(
       offset: Offset(0, floatY),
-      child: Container(
+      child: Glass(
+        radius: AppRadius.d22,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          border: Border.all(color: Colors.white.withOpacity(0.55)),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.70),
-              Colors.white.withOpacity(0.48),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.07),
-              blurRadius: 22,
-              offset: const Offset(0, 16),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: child,
-          ),
-        ),
+        background: Colors.white.withOpacity(0.72),
+        blur: 18,
+        shadows: const [
+          BoxShadow(color: Color(0x14000000), blurRadius: 26, offset: Offset(0, 18)),
+          BoxShadow(color: Color(0x0C000000), blurRadius: 2, offset: Offset(0, 1)),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.65), width: 1),
+        child: child,
       ),
     );
   }
 }
 
+/// ─────────────────────────────────────────────────────────────
+/// Button + Titles
+/// ─────────────────────────────────────────────────────────────
 class _Shiny3DButton extends StatelessWidget {
   final AnimationController controller;
   final Animation<double> pressT;
@@ -957,9 +963,9 @@ class _Shiny3DButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final t = pressT.value; // 0..1
-        final lift = lerpDouble(0, 3, 1 - t)!;
-        final press = lerpDouble(0, 2.5, t)!;
+        final t = pressT.value;
+        final lift = lerpDouble(1.0, 0.0, t)!;
+        final press = lerpDouble(0.0, 1.0, t)!;
 
         return GestureDetector(
           onTapDown: (_) => controller.forward(),
@@ -967,65 +973,64 @@ class _Shiny3DButton extends StatelessWidget {
           onTapUp: (_) => controller.reverse(),
           onTap: onPressed,
           child: Transform.translate(
-            offset: Offset(0, -lift + press),
-            child: Container(
-              height: 54,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1E2235),
-                    Color(0xFF3A3F67),
+            offset: Offset(0, -lift),
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 140),
+              scale: 1.0 - (0.01 * press),
+              child: Container(
+                height: 54,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    begin: Alignment(-1, -1),
+                    end: Alignment(1, 1),
+                    colors: [Color(0xFF5B7CFA), Color(0xFF8A5CFF), Color(0xFF62F6C8)],
+                  ),
+                  border: Border.all(color: const Color(0x405B7CFA)),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x1A000000), blurRadius: 22, offset: Offset(0, 16)),
+                    BoxShadow(color: Color(0x0C000000), blurRadius: 2, offset: Offset(0, 1)),
                   ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 18,
-                    offset: Offset(0, 12 + press),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.r22),
-                      child: Opacity(
-                        opacity: 0.22,
-                        child: Transform.rotate(
-                          angle: -0.35,
-                          child: Container(
-                            width: 200,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.0),
-                                  Colors.white.withOpacity(0.55),
-                                  Colors.white.withOpacity(0.0),
-                                ],
-                                stops: const [0.25, 0.5, 0.75],
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Opacity(
+                          opacity: 0.75,
+                          child: Transform.translate(
+                            offset: Offset(
+                              lerpDouble(-40, 40, (sin(controller.value * pi * 2) * 0.5 + 0.5))!,
+                              0,
+                            ),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: RadialGradient(
+                                  center: Alignment(-0.6, -0.4),
+                                  radius: 0.9,
+                                  colors: [Color(0x52FFFFFF), Color(0x00FFFFFF)],
+                                  stops: [0.0, 0.55],
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Center(
-                    child: Text(
-                      text,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
+                    Center(
+                      child: Text(
+                        text,
+                        style: GoogleFonts.manrope(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1035,61 +1040,49 @@ class _Shiny3DButton extends StatelessWidget {
   }
 }
 
-/// 3D extruded “WELCOME BACK” title (kept)
-class _Welcome3DTitle extends StatelessWidget {
+class _WelcomeSimpleTitle extends StatelessWidget {
   final String text;
-  const _Welcome3DTitle({required this.text});
+  const _WelcomeSimpleTitle({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        for (int i = 12; i >= 1; i--)
-          Transform.translate(
-            offset: Offset(0, i.toDouble()),
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.6,
-                color: Colors.black.withOpacity(0.055),
-              ),
-            ),
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: GoogleFonts.manrope(
+        fontSize: 28,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.2,
+        color: AppColors.textDark,
+        shadows: [
+          Shadow(
+            blurRadius: 16,
+            offset: const Offset(0, 10),
+            color: const Color(0xFF8A5CFF).withOpacity(0.14),
           ),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-            color: const Color(0xFF1E2235),
-            shadows: [
-              Shadow(
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
-              ),
-              Shadow(
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INTRO LOCKUP (Upgraded)
-// ─────────────────────────────────────────────────────────────────────────────
+class _LogoAssetOrFallback extends StatelessWidget {
+  final double size;
+  const _LogoAssetOrFallback({required this.size});
 
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      "assets/logo.png",
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => Icon(Icons.auto_awesome_rounded, color: Colors.white, size: size),
+    );
+  }
+}
+
+/// ─────────────────────────────────────────────────────────────
+/// INTRO LOCKUP (exact animation)
+/// ─────────────────────────────────────────────────────────────
 class _NexoraFullLockup extends StatelessWidget {
   final List<_LetterAnim> letters;
   final String typedTagline;
@@ -1098,9 +1091,14 @@ class _NexoraFullLockup extends StatelessWidget {
   final double tagFade;
   final double tagSlide;
 
-  // NEW
+  final double logoTilt;
+  final double logoSquash;
+  final double logoSkidT;
+
   final double holoT;
   final double ambientT;
+
+  final double logoSlideX;
 
   const _NexoraFullLockup({
     required this.letters,
@@ -1111,85 +1109,133 @@ class _NexoraFullLockup extends StatelessWidget {
     required this.tagSlide,
     required this.holoT,
     required this.ambientT,
+    required this.logoSlideX,
+    required this.logoTilt,
+    required this.logoSquash,
+    required this.logoSkidT,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final w = size.width;
+    return LayoutBuilder(builder: (context, c) {
+      final w = c.maxWidth;
+      final h = c.maxHeight;
+      final bool isTight = w < 520;
 
-    final bool isMobile = w < 600;
+      final double logoSize =
+      isTight ? (w * 0.36).clamp(150.0, 205.0) : (w * 0.22).clamp(190.0, 280.0);
 
-    // 🔒 SAFE sizes (no overflow)
-    final double logoSize = isMobile ? 165 : 200;
-    final double brandScale = isMobile ? 1.18 : 1.32;
+      final double brandScaleBoost = isTight ? 1.06 : 1.18;
+      final double maxLockupWidth = isTight ? min(w - 32, 560) : min(w - 40, 980);
 
-    // small horizontal push only (visual balance)
-    final double textOffsetX = isMobile ? 6 : 10;
+      final movingFactor = (logoSlideX.abs() / 620.0).clamp(0.0, 1.0);
+      final runBob = sin((1 - movingFactor) * pi * 8) * 6.0 * movingFactor;
 
-    return Align(
-      // slightly lower than exact center
-      alignment: const Alignment(0, 0.10),
-      child: SizedBox(
-        width: w, // ✅ fill width without forcing overflow
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // LOGO (kept safe)
-              Opacity(
-                opacity: iconFade.clamp(0.0, 1.0),
-                child: Transform.scale(
-                  scale: iconScale,
-                  child: Image.asset(
-                    "assets/logo.png",
-                    width: logoSize,
-                    height: logoSize,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                  ),
+      final skidAmp = (1.0 - (logoSkidT - 0.5).abs() * 2.0).clamp(0.0, 1.0);
+      final skid = sin(logoSkidT * pi * 10) * 3.0 * skidAmp;
+
+      Widget logo = Transform.translate(
+        offset: Offset(logoSlideX + skid, runBob + (skid * 0.25)),
+        child: Transform.rotate(
+          angle: logoTilt,
+          child: Transform.scale(
+            scaleY: logoSquash,
+            scaleX: (2.0 - logoSquash).clamp(0.90, 1.20),
+            child: Opacity(
+              opacity: iconFade.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: iconScale,
+                child: SizedBox(
+                  width: logoSize,
+                  height: logoSize,
+                  child: _LogoAssetOrFallback(size: logoSize * 0.28),
                 ),
               ),
-
-              const SizedBox(width: 18), // controlled gap
-
-              // BRAND TEXT
-              Flexible(
-                child: Transform.translate(
-                  offset: Offset(textOffsetX, 0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _HoloGlassBrandWord(
-                        letters: letters,
-                        scaleBoost: brandScale,
-                        holoT: holoT,
-                        ambientT: ambientT,
-                      ),
-                      const SizedBox(height: 10),
-                      Transform.translate(
-                        offset: Offset(0, tagSlide),
-                        child: Opacity(
-                          opacity: tagFade.clamp(0.0, 1.0),
-                          child: _TaglineTypedText(text: typedTagline),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+
+      Widget word = _HoloGlassBrandWord(
+        letters: letters,
+        scaleBoost: brandScaleBoost,
+        holoT: holoT,
+        ambientT: ambientT,
+        tight: isTight,
+      );
+
+      Widget tag = Transform.translate(
+        offset: Offset(0, tagSlide),
+        child: Opacity(
+          opacity: tagFade.clamp(0.0, 1.0),
+          child: _TaglineTypedText(text: typedTagline, tight: isTight),
+        ),
+      );
+
+      final lockup = isTight
+          ? Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          logo,
+          const SizedBox(height: 14),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxLockupWidth),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(child: word),
+                const SizedBox(height: 10),
+                Center(child: tag),
+              ],
+            ),
+          ),
+        ],
+      )
+          : Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          logo,
+          const SizedBox(width: 18),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxLockupWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  word,
+                  const SizedBox(height: 10),
+                  tag,
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return Align(
+        alignment: const Alignment(0, 0.10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
+            width: maxLockupWidth,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: maxLockupWidth,
+                  maxHeight: (h * 0.85).clamp(320.0, 900.0),
+                ),
+                child: lockup,
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
-
-
-
 }
 
 class _LetterAnim {
@@ -1208,88 +1254,84 @@ class _LetterAnim {
   });
 }
 
-/// NEW: Brand word wrapper (keeps your per-letter jump/scale animation)
 class _HoloGlassBrandWord extends StatelessWidget {
   final List<_LetterAnim> letters;
   final double scaleBoost;
   final double holoT;
   final double ambientT;
+  final bool tight;
 
   const _HoloGlassBrandWord({
     required this.letters,
     required this.scaleBoost,
     required this.holoT,
     required this.ambientT,
+    required this.tight,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Animated holographic movement direction (shimmer)
     final shimmerX = lerpDouble(-0.9, 1.1, holoT)!;
     final shimmerY = sin(holoT * pi * 2) * 0.15;
+
+    final baseFont = tight ? 54.0 : 66.0;
+    final fontSize = baseFont * scaleBoost;
 
     return RepaintBoundary(
       child: Stack(
         children: [
-          // subtle outer glow behind everything
           Positioned.fill(
             child: Transform.translate(
               offset: Offset(sin(ambientT * pi * 2) * 2.0, cos(ambientT * pi * 2) * 1.0),
               child: Opacity(
-                opacity: 0.55,
+                opacity: 0.50,
                 child: ImageFiltered(
                   imageFilter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
                   child: _BrandWord(
                     letters: letters,
-                    // base style only for glow layer
                     baseStyle: GoogleFonts.manrope(
-                      fontSize: 66 * scaleBoost,
+                      fontSize: fontSize,
                       height: 0.92,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -1.3,
-                      color: const Color(0xFF6B7CFF).withOpacity(0.28),
+                      color: const Color(0xFF8A5CFF).withOpacity(0.28),
                     ),
-                    scaleBoost: scaleBoost,
                     useHoloPaint: false,
                     holoPaint: null,
+                    glassOverlay: false,
                   ),
                 ),
               ),
             ),
           ),
-
-          // glass body layer (frosted)
           _BrandWord(
             letters: letters,
             baseStyle: GoogleFonts.manrope(
-              fontSize: 66 * scaleBoost,
+              fontSize: fontSize,
               height: 0.92,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.3,
-              color: const Color(0xFF1E2235).withOpacity(0.88),
+              color: AppColors.textDark.withOpacity(0.88),
             ),
-            scaleBoost: scaleBoost,
             useHoloPaint: false,
             holoPaint: null,
             glassOverlay: true,
           ),
-
-          // holographic gradient + shimmer (top layer)
           ShaderMask(
             blendMode: BlendMode.srcATop,
             shaderCallback: (rect) {
-              // moving holographic gradient
               final begin = Alignment(shimmerX, -0.9 + shimmerY);
               final end = Alignment(-shimmerX, 0.9 - shimmerY);
 
+              // FIX: no LinearGradient.copyWith (doesn't exist)
               return LinearGradient(
                 begin: begin,
                 end: end,
                 colors: const [
-                  Color(0xFF6B7CFF), // indigo
-                  Color(0xFF7EDCFF), // sky
-                  Color(0xFFFF6BD6), // soft pink
-                  Color(0xFFB9C7FF), // lilac
+                  Color(0xFF5B7CFA),
+                  Color(0xFF8A5CFF),
+                  Color(0xFF62F6C8),
+                  Color(0xFFB9C7FF),
                 ],
                 stops: const [0.0, 0.35, 0.68, 1.0],
               ).createShader(rect);
@@ -1297,25 +1339,23 @@ class _HoloGlassBrandWord extends StatelessWidget {
             child: _BrandWord(
               letters: letters,
               baseStyle: GoogleFonts.manrope(
-                fontSize: 66 * scaleBoost,
+                fontSize: fontSize,
                 height: 0.92,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -1.3,
                 color: Colors.white.withOpacity(0.95),
               ),
-              scaleBoost: scaleBoost,
               useHoloPaint: true,
               holoPaint: Paint()
                 ..color = Colors.white.withOpacity(0.90)
                 ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.6),
+              glassOverlay: false,
             ),
           ),
-
-          // glossy specular highlight sweep (very subtle)
           Positioned.fill(
             child: IgnorePointer(
               child: Opacity(
-                opacity: 0.16,
+                opacity: 0.14,
                 child: Transform.rotate(
                   angle: -0.26,
                   child: FractionallySizedBox(
@@ -1346,10 +1386,7 @@ class _HoloGlassBrandWord extends StatelessWidget {
 
 class _BrandWord extends StatelessWidget {
   final List<_LetterAnim> letters;
-
-  // new optional styling controls
   final TextStyle baseStyle;
-  final double scaleBoost;
   final bool useHoloPaint;
   final Paint? holoPaint;
   final bool glassOverlay;
@@ -1357,17 +1394,16 @@ class _BrandWord extends StatelessWidget {
   const _BrandWord({
     required this.letters,
     required this.baseStyle,
-    required this.scaleBoost,
     required this.useHoloPaint,
     required this.holoPaint,
-    this.glassOverlay = false,
+    required this.glassOverlay,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Wrap(
+      spacing: 0,
+      runSpacing: 0,
       children: [
         for (final l in letters)
           _LetterWidget(
@@ -1377,7 +1413,6 @@ class _BrandWord extends StatelessWidget {
             opacity: l.opacity.value,
             blur: l.blur.value,
             baseStyle: baseStyle,
-            scaleBoost: scaleBoost,
             useHoloPaint: useHoloPaint,
             holoPaint: holoPaint,
             glassOverlay: glassOverlay,
@@ -1394,9 +1429,7 @@ class _LetterWidget extends StatelessWidget {
   final double opacity;
   final double blur;
 
-  // new
   final TextStyle baseStyle;
-  final double scaleBoost;
   final bool useHoloPaint;
   final Paint? holoPaint;
   final bool glassOverlay;
@@ -1408,7 +1441,6 @@ class _LetterWidget extends StatelessWidget {
     required this.opacity,
     required this.blur,
     required this.baseStyle,
-    required this.scaleBoost,
     required this.useHoloPaint,
     required this.holoPaint,
     required this.glassOverlay,
@@ -1416,12 +1448,8 @@ class _LetterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final face = Text(
-      char,
-      style: baseStyle,
-    );
+    final face = Text(char, style: baseStyle);
 
-    // glass overlay effect (frosty highlights)
     final glass = ShaderMask(
       blendMode: BlendMode.srcATop,
       shaderCallback: (rect) {
@@ -1451,40 +1479,25 @@ class _LetterWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 1.0),
               child: Stack(
                 children: [
-                  // extrusion (depth) for premium 3D
-                  for (int i = 10; i >= 1; i--)
+                  for (int i = 6; i >= 1; i--)
                     Transform.translate(
                       offset: Offset(0, i.toDouble()),
                       child: Text(
                         char,
-                        style: baseStyle.copyWith(
-                          color: Colors.black.withOpacity(0.06),
-                        ),
+                        style: baseStyle.copyWith(color: Colors.black.withOpacity(0.045)),
                       ),
                     ),
-
-                  // main face
                   if (glassOverlay) glass else face,
-
-                  // tiny crisp edge to avoid blur on web
                   if (kIsWeb)
                     Text(
                       char,
                       style: baseStyle.copyWith(
-                        color: (baseStyle.color ?? Colors.black).withOpacity(0.22),
+                        color: (baseStyle.color ?? Colors.black).withOpacity(0.20),
                         shadows: const [],
                       ),
                     ),
-
-                  // subtle light stroke (helps holographic layer pop)
                   if (useHoloPaint && holoPaint != null)
-                    Text(
-                      char,
-                      style: baseStyle.copyWith(
-                        foreground: holoPaint,
-                        color: null,
-                      ),
-                    ),
+                    Text(char, style: baseStyle.copyWith(foreground: holoPaint, color: null)),
                 ],
               ),
             ),
@@ -1497,31 +1510,30 @@ class _LetterWidget extends StatelessWidget {
 
 class _TaglineTypedText extends StatelessWidget {
   final String text;
-  const _TaglineTypedText({required this.text});
+  final bool tight;
+  const _TaglineTypedText({required this.text, required this.tight});
 
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final fontSize = w < 380 ? 15.0 : (w < 700 ? 16.0 : 17.0);
+    final fontSize = tight ? 15.0 : (w < 900 ? 16.0 : 17.0);
 
     return Text(
       text,
       maxLines: 2,
-      overflow: TextOverflow.clip,
+      overflow: TextOverflow.ellipsis,
+      textAlign: tight ? TextAlign.center : TextAlign.left,
       style: GoogleFonts.manrope(
         fontSize: fontSize,
         height: 1.2,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF7A7E92),
+        color: AppColors.textMid,
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TOP CAP CLIPPER (kept)
-// ─────────────────────────────────────────────────────────────────────────────
-
+/// TOP CAP CLIPPER
 class _HeaderCapClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

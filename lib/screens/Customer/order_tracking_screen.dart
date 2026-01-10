@@ -6,6 +6,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
+import '../../theme/app_widgets.dart';
 import 'order_result_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
@@ -141,17 +142,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color.lerp(
-                  const Color(0xFFF7F7FA),
-                  const Color(0xFFEFF1FF),
-                  _bgT.value,
-                )!,
-                Color.lerp(
-                  const Color(0xFFF7F7FA),
-                  const Color(0xFFFBEFFF),
-                  _bgT.value,
-                )!,
-                const Color(0xFFF7F7FA),
+                Color.lerp(AppColors.bg3, AppColors.bg2, _bgT.value)!,
+                Color.lerp(AppColors.bg3, AppColors.bg1, _bgT.value)!,
+                AppColors.bg3,
               ],
               stops: const [0.0, 0.55, 1.0],
             ),
@@ -173,19 +166,25 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 dx: lerpDouble(-42, 18, t)!,
                 dy: lerpDouble(72, 50, t)!,
                 size: 240,
-                opacity: 0.14,
+                opacity: 0.12,
+                a: AppColors.primary,
+                b: AppColors.secondary,
               ),
               _GlowBlob(
                 dx: lerpDouble(230, 290, t)!,
                 dy: lerpDouble(235, 195, t)!,
                 size: 290,
                 opacity: 0.10,
+                a: AppColors.secondary,
+                b: AppColors.other,
               ),
               _GlowBlob(
                 dx: lerpDouble(110, 140, t)!,
                 dy: lerpDouble(520, 560, t)!,
                 size: 240,
                 opacity: 0.08,
+                a: AppColors.primary,
+                b: AppColors.other,
               ),
             ],
           );
@@ -227,23 +226,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Order #QDS-28471",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
-            ),
+            style: AppText.h2(),
           ),
           const SizedBox(height: 6),
           Row(
             children: [
-              const Text(
+              Text(
                 "Estimated delivery • 25–35 min",
-                style: TextStyle(
+                style: AppText.body().copyWith(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMid,
+                  color: AppColors.ink.withOpacity(0.55),
                 ),
               ),
               const Spacer(),
@@ -266,12 +260,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.pill(),
             color: Colors.white.withOpacity(0.62),
             border: Border.all(color: Colors.white.withOpacity(0.75)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6B7CFF).withOpacity((active ? 0.22 : 0.12) * pulse),
+                color: AppColors.secondary
+                    .withOpacity((active ? 0.22 : 0.12) * pulse),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -283,12 +278,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               Icon(
                 done ? Icons.check_circle_rounded : Icons.timelapse_rounded,
                 size: 16,
-                color: const Color(0xFF1E2235).withOpacity(0.8),
+                color: AppColors.ink.withOpacity(0.8),
               ),
               const SizedBox(width: 6),
               Text(
                 done ? "Almost there" : "Live",
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                style: AppText.kicker().copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink.withOpacity(0.88),
+                ),
               ),
             ],
           ),
@@ -332,8 +331,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         curve: Curves.easeOutCubic,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: done ? FontWeight.w900 : FontWeight.w700,
-                          color: done ? AppColors.textDark : AppColors.textMid,
+                          fontWeight:
+                          done ? FontWeight.w900 : FontWeight.w700,
+                          color: done
+                              ? AppColors.ink.withOpacity(0.92)
+                              : AppColors.ink.withOpacity(0.55),
                         ),
                         child: Text(steps[i]),
                       ),
@@ -361,21 +363,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "Rider: Ali Khan",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                SizedBox(height: 4),
+              children: [
+                Text("Rider: Ali Khan", style: AppText.h3()),
+                const SizedBox(height: 4),
                 Text(
                   "Bike • 2.1 km away",
-                  style: TextStyle(
+                  style: AppText.subtle().copyWith(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMid,
+                    color: AppColors.ink.withOpacity(0.55),
                   ),
                 ),
               ],
@@ -383,7 +378,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           ),
           _PressScale(
             onTap: () {},
-            child: _GlassActionPuck(
+            child: const _GlassActionPuck(
               icon: Icons.phone_rounded,
               label: "Call",
             ),
@@ -418,7 +413,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               border: Border.all(color: Colors.white.withOpacity(0.72)),
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.delivery_dining_rounded),
+            child: Icon(
+              Icons.delivery_dining_rounded,
+              color: AppColors.ink.withOpacity(0.75),
+            ),
           ),
         ),
       ),
@@ -468,39 +466,42 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               return Transform.translate(
                 offset: Offset(0, -lift + press + floatY),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.r26),
+                  borderRadius: AppRadius.r24,
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.r26),
+                        borderRadius: AppRadius.r24,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            const Color(0xFF0B0D12).withOpacity(0.90),
-                            const Color(0xFF171A26).withOpacity(0.86),
-                            const Color(0xFF0B0D12).withOpacity(0.92),
+                            AppColors.primary.withOpacity(0.92),
+                            AppColors.secondary.withOpacity(0.88),
+                            AppColors.primary.withOpacity(0.92),
                           ],
                           stops: const [0.0, 0.55, 1.0],
                         ),
-                        border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.2),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.14),
+                          width: 1.2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.42),
+                            color: Colors.black.withOpacity(0.36),
                             blurRadius: 50,
                             offset: const Offset(0, 34),
                             spreadRadius: 2,
                           ),
                           BoxShadow(
-                            color: const Color(0xFF6B7CFF).withOpacity(0.20),
+                            color: AppColors.secondary.withOpacity(0.18),
                             blurRadius: 36,
                             offset: const Offset(0, 20),
                             spreadRadius: -8,
                           ),
                           BoxShadow(
-                            color: const Color(0xFFFF6BD6).withOpacity(0.12),
+                            color: AppColors.other.withOpacity(0.12),
                             blurRadius: 34,
                             offset: const Offset(0, 18),
                             spreadRadius: -12,
@@ -531,8 +532,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                                         gradient: LinearGradient(
                                           colors: [
                                             Colors.white.withOpacity(0.0),
-                                            const Color(0xFF6B7CFF).withOpacity(0.22),
-                                            const Color(0xFFFF6BD6).withOpacity(0.14),
+                                            AppColors.secondary
+                                                .withOpacity(0.18),
+                                            AppColors.other.withOpacity(0.12),
                                             Colors.white.withOpacity(0.0),
                                           ],
                                           stops: const [0.10, 0.42, 0.62, 0.92],
@@ -591,7 +593,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                                         // TODO: call rider
                                       },
                                       downScale: 0.975,
-                                      child: _PrimaryDockButton(
+                                      child: const _PrimaryDockButton(
                                         label: "CALL RIDER",
                                         subtitle: "Ali Khan • 2.1 km",
                                       ),
@@ -612,7 +614,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                                         await _dockCtrl.reverse();
                                         // TODO: call shop
                                       },
-                                      child: const _SoftDockButton(label: "Call Shop"),
+                                      child:
+                                      const _SoftDockButton(label: "Call Shop"),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -623,7 +626,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                                         await _dockCtrl.reverse();
                                         // TODO: report issue
                                       },
-                                      child: const _SoftDockButton(label: "Support"),
+                                      child:
+                                      const _SoftDockButton(label: "Support"),
                                     ),
                                   ),
                                 ],
@@ -659,7 +663,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 color: const Color(0xFF22C55E),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6B7CFF).withOpacity(0.18 * pulse),
+                    color: AppColors.secondary.withOpacity(0.14 * pulse),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -669,7 +673,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                currentStep >= 4 ? "Rider is nearby • On the way" : "Tracking live • Updates in real time",
+                currentStep >= 4
+                    ? "Rider is nearby • On the way"
+                    : "Tracking live • Updates in real time",
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.86),
                   fontWeight: FontWeight.w800,
@@ -680,7 +686,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadius.pill(),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -722,9 +728,9 @@ class _TrackingTopCap extends StatelessWidget {
         clipper: _TrackingHeaderClipper(),
         child: Container(
           height: 140 + topInset,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: AppShadows.topCap,
+            boxShadow: AppShadows.soft,
           ),
         ),
       ),
@@ -760,11 +766,15 @@ class _TrackingHeaderClipper extends CustomClipper<Path> {
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -780,8 +790,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFFFF6BD6).withOpacity(opacity * 0.65),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.65),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],
@@ -810,34 +820,21 @@ class _GlassCard extends StatelessWidget {
 
     return Transform.translate(
       offset: Offset(0, floatY),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r18),
-              border: Border.all(color: Colors.white.withOpacity(0.62)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.72),
-                  Colors.white.withOpacity(0.48),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
-                  blurRadius: 22,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: child,
+      child: Glass(
+        borderRadius: AppRadius.r18,
+        sigmaX: 16,
+        sigmaY: 16,
+        padding: padding,
+        color: Colors.white.withOpacity(0.62),
+        borderColor: Colors.white.withOpacity(0.62),
+        shadows: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 22,
+            offset: const Offset(0, 16),
           ),
-        ),
+        ],
+        child: child,
       ),
     );
   }
@@ -898,16 +895,10 @@ class _TopIconPuck extends StatelessWidget {
             shape: BoxShape.circle,
             color: Colors.white.withOpacity(0.58),
             border: Border.all(color: Colors.white.withOpacity(0.72)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppShadows.puck,
           ),
           alignment: Alignment.center,
-          child: Icon(icon, size: 20, color: const Color(0xFF1E2235)),
+          child: Icon(icon, size: 20, color: AppColors.ink),
         ),
       ),
     );
@@ -925,14 +916,14 @@ class _DockPuck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: AppRadius.r18,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           width: 74,
           height: 56,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppRadius.r18,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -976,21 +967,21 @@ class _PrimaryDockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.r18,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.r18,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
                 Colors.white.withOpacity(0.96),
-                const Color(0xFFF7F8FA).withOpacity(0.92),
-                const Color(0xFFEFF1FF).withOpacity(0.90),
+                AppColors.bg2.withOpacity(0.92),
+                AppColors.bg1.withOpacity(0.90),
               ],
               stops: const [0.0, 0.58, 1.0],
             ),
@@ -1002,13 +993,13 @@ class _PrimaryDockButton extends StatelessWidget {
                 offset: const Offset(0, 18),
               ),
               BoxShadow(
-                color: const Color(0xFF6B7CFF).withOpacity(0.14),
+                color: AppColors.secondary.withOpacity(0.12),
                 blurRadius: 24,
                 offset: const Offset(0, 14),
                 spreadRadius: -10,
               ),
               BoxShadow(
-                color: const Color(0xFFFF6BD6).withOpacity(0.10),
+                color: AppColors.other.withOpacity(0.10),
                 blurRadius: 24,
                 offset: const Offset(0, 14),
                 spreadRadius: -12,
@@ -1026,17 +1017,17 @@ class _PrimaryDockButton extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF111827).withOpacity(0.10),
-                      const Color(0xFF111827).withOpacity(0.04),
+                      AppColors.ink.withOpacity(0.10),
+                      AppColors.ink.withOpacity(0.04),
                     ],
                   ),
-                  border: Border.all(color: const Color(0xFF111827).withOpacity(0.10)),
+                  border: Border.all(color: AppColors.ink.withOpacity(0.10)),
                 ),
                 alignment: Alignment.center,
-                child: const Icon(
+                child: Icon(
                   Icons.phone_rounded,
                   size: 18,
-                  color: Color(0xFF111827),
+                  color: AppColors.ink.withOpacity(0.92),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1047,11 +1038,11 @@ class _PrimaryDockButton extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 12.5,
                         letterSpacing: 0.7,
-                        color: Color(0xFF111827),
+                        color: AppColors.ink.withOpacity(0.92),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1059,16 +1050,16 @@ class _PrimaryDockButton extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 12,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.ink.withOpacity(0.55),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF111827)),
+              Icon(Icons.chevron_right_rounded, color: AppColors.ink.withOpacity(0.92)),
             ],
           ),
         ),
@@ -1084,14 +1075,14 @@ class _SoftDockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: AppRadius.r18,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           height: 50,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppRadius.r18,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1136,25 +1127,19 @@ class _GlassActionPuck extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             color: Colors.white.withOpacity(0.58),
             border: Border.all(color: Colors.white.withOpacity(0.72)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppShadows.soft,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF1E2235)),
+              Icon(icon, size: 18, color: AppColors.ink),
               const SizedBox(height: 2),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E2235),
+                  color: AppColors.ink.withOpacity(0.92),
                 ),
               ),
             ],
@@ -1198,13 +1183,13 @@ class _Extruded3DTitle extends StatelessWidget {
             fontSize: 18,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.8,
-            color: const Color(0xFF1E2235),
+            color: AppColors.ink,
             height: 1.0,
             shadows: [
               Shadow(
                 blurRadius: 18,
                 offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                color: AppColors.secondary.withOpacity(0.14),
               ),
               Shadow(
                 blurRadius: 10,
@@ -1236,11 +1221,11 @@ class _HoloLine extends StatelessWidget {
       margin: const EdgeInsets.only(top: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(99),
-        color: done ? const Color(0xFF1E2235) : AppColors.divider,
+        color: done ? AppColors.ink.withOpacity(0.90) : AppColors.borderBase(),
         boxShadow: done
             ? [
           BoxShadow(
-            color: const Color(0xFF6B7CFF).withOpacity(0.20 * pulse),
+            color: AppColors.secondary.withOpacity(0.18 * pulse),
             blurRadius: 16,
             offset: const Offset(0, 10),
           ),
@@ -1280,8 +1265,8 @@ class _HoloTick extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6B7CFF).withOpacity(0.20 * pulse),
-                    const Color(0xFFFF6BD6).withOpacity(0.14 * pulse),
+                    AppColors.secondary.withOpacity(0.18 * pulse),
+                    AppColors.other.withOpacity(0.12 * pulse),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.55, 1.0],
@@ -1309,7 +1294,7 @@ class _HoloTick extends StatelessWidget {
                     ),
                     if (done)
                       BoxShadow(
-                        color: const Color(0xFF6B7CFF).withOpacity(0.18 * pulse),
+                        color: AppColors.secondary.withOpacity(0.14 * pulse),
                         blurRadius: 18,
                         offset: const Offset(0, 10),
                       ),
@@ -1321,11 +1306,11 @@ class _HoloTick extends StatelessWidget {
                     switchInCurve: Curves.easeOutBack,
                     switchOutCurve: Curves.easeIn,
                     child: done
-                        ? const Icon(
+                        ? Icon(
                       Icons.check_rounded,
-                      key: ValueKey("done"),
+                      key: const ValueKey("done"),
                       size: 14,
-                      color: Color(0xFF1E2235),
+                      color: AppColors.ink,
                     )
                         : const SizedBox(
                       key: ValueKey("empty"),

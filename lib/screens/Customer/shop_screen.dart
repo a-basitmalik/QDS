@@ -1,21 +1,21 @@
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:qds/screens/Customer/product_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qds/screens/Customer/product_screen.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 
-/// ✅ SHOP SCREEN — Updated to match your FINAL Auth Theme
-/// - Removes hover-only behavior (NO MouseRegion hover scaling)
-/// - Adds press/click zoom + “light up” glow (works mobile + web)
-/// - Keeps your existing ambient animations (bg + blobs + entrance + focus zoom)
-/// - Adds Nexora-auth style mini header lockup and glossy interactions
-///
-/// NOTE: This file is fully self-contained (helpers included at bottom).
+/// ✅ SHOP SCREEN — Aligned with YOUR theme
+/// - No hover-only behavior
+/// - Press/click zoom + glow (mobile + web)
+/// - Keeps ambient animations + entrance + focus zoom
+/// - Uses AppColors/AppRadius/AppShadows/AppText ONLY
 class ShopScreen extends StatefulWidget {
   final String shopName;
 
@@ -34,7 +34,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
 
-  // Ambient background (like login/signup)
+  // Ambient background
   late final AnimationController _ambientCtrl;
   late final Animation<double> _bgT;
   late final Animation<double> _floatT;
@@ -44,7 +44,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   late final Animation<double> _focusZoom;
   late final Animation<double> _focusLift;
 
-  // CTA / button press controller (for glossy 3D press if needed)
+  // CTA press controller
   late final AnimationController _btnCtrl;
   late final Animation<double> _btnPress;
 
@@ -137,39 +137,12 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     final topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.bg3,
       body: Stack(
         children: [
-          // ✅ Animated soft gradient background (exact auth vibe)
-          AnimatedBuilder(
-            animation: _ambientCtrl,
-            builder: (context, _) {
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFEFF1FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFFBEFFF),
-                        _bgT.value,
-                      )!,
-                      const Color(0xFFF7F7FA),
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
-                ),
-              );
-            },
-          ),
+          _animatedThemeBackground(),
 
-          // ✅ Glow blobs (auth style)
+          // ✅ Glow blobs (theme colors)
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -182,18 +155,24 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       dy: lerpDouble(80, 55, t)!,
                       size: 240,
                       opacity: 0.14,
+                      a: AppColors.secondary,
+                      b: AppColors.other,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(220, 290, t)!,
                       dy: lerpDouble(220, 190, t)!,
                       size: 280,
                       opacity: 0.10,
+                      a: AppColors.primary,
+                      b: AppColors.secondary,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(205, 260, 1 - t)!,
                       dy: lerpDouble(18, 30, t)!,
                       size: 210,
                       opacity: 0.09,
+                      a: AppColors.other,
+                      b: AppColors.secondary,
                     ),
                   ],
                 );
@@ -201,20 +180,44 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ✅ Banner (kept) + glossy overlay
+          // ✅ Banner
           _shopBanner(),
 
           // ✅ Content
           _content(topInset),
 
-          // ✅ Sticky mini header lockup (like your login/signup back capsule)
+          // ✅ Mini header
           _topMiniHeader(context),
         ],
       ),
     );
   }
 
-  // ───────────────────────── Top mini header (Auth style) ─────────────────────────
+  // ───────────────────────── Background ─────────────────────────
+
+  Widget _animatedThemeBackground() {
+    return AnimatedBuilder(
+      animation: _ambientCtrl,
+      builder: (context, _) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.lerp(AppColors.bg3, AppColors.bg2, _bgT.value)!,
+                Color.lerp(AppColors.bg2, AppColors.bg1, _bgT.value)!,
+                AppColors.bg1,
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ───────────────────────── Top mini header ─────────────────────────
 
   Widget _topMiniHeader(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
@@ -228,26 +231,25 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
           _PressGlowScale(
             onTap: () => Navigator.pop(context),
             borderRadius: BorderRadius.circular(999),
-            glowColor: const Color(0xFF6B7CFF).withOpacity(0.18),
+            glowColor: AppColors.secondary.withOpacity(0.16),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.50),
+                color: Colors.white.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withOpacity(0.55)),
+                border: Border.all(color: AppColors.borderBase(0.85)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.arrow_back_rounded,
-                      size: 18, color: Color(0xFF1E2235)),
+                  Icon(Icons.arrow_back_rounded, size: 18, color: AppColors.ink),
                   const SizedBox(width: 8),
                   Text(
                     "Back",
                     style: GoogleFonts.manrope(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF1E2235),
+                      color: AppColors.ink,
                     ),
                   ),
                 ],
@@ -266,12 +268,11 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
           const SizedBox(width: 12),
           _PressGlowScale(
             onTap: () {},
-            glowColor: const Color(0xFFFF6BD6).withOpacity(0.16),
+            glowColor: AppColors.other.withOpacity(0.14),
             borderRadius: BorderRadius.circular(18),
             child: _GlassIconPuck(
               icon: Icons.share_outlined,
               onTap: () {},
-              // no hover here; press handled by wrapper
             ),
           ),
         ],
@@ -295,7 +296,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // dark-to-clear overlay
+          // overlay
           Container(
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
@@ -331,7 +332,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // bottom fade to blend with page
+          // bottom blend to bg
           Positioned(
             left: 0,
             right: 0,
@@ -344,8 +345,8 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    const Color(0xFFF7F7FA).withOpacity(0.92),
-                    const Color(0xFFF7F7FA),
+                    AppColors.bg3.withOpacity(0.92),
+                    AppColors.bg3,
                   ],
                 ),
               ),
@@ -410,7 +411,6 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 
               const SizedBox(height: 20),
 
-              // Optional bottom CTA (keeps auth button vibe)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _Shiny3DButton(
@@ -420,7 +420,6 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                   onPressed: () async {
                     await _btnCtrl.forward();
                     await _btnCtrl.reverse();
-                    // TODO: navigate to all products / category listing
                   },
                 ),
               ),
@@ -448,18 +447,21 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Title3D(
+                Text(
                   title,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
+                  style: AppText.h2().copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: AppText.body().copyWith(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF7A7E92).withOpacity(0.92),
+                    color: AppColors.muted,
                   ),
                 ),
               ],
@@ -470,15 +472,15 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             onTap: onAction,
             downScale: 0.96,
             borderRadius: BorderRadius.circular(999),
-            glowColor: const Color(0xFF6B7CFF).withOpacity(0.14),
+            glowColor: AppColors.secondary.withOpacity(0.12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Text(
                 actionText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E2235),
+                  color: AppColors.ink,
                 ),
               ),
             ),
@@ -499,23 +501,26 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Title3D(
+            Text(
               widget.shopName,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
+              style: AppText.h2().copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               "25–35 min • 1.4 km away",
-              style: TextStyle(
+              style: AppText.body().copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF7A7E92).withOpacity(0.95),
+                color: AppColors.muted,
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: const [
+            const Row(
+              children: [
                 _InfoPill(
                   icon: Icons.star_rounded,
                   iconColor: Color(0xFFF59E0B),
@@ -543,7 +548,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: AnimatedContainer(
@@ -551,53 +556,47 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             curve: Curves.easeOut,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(focused ? 0.62 : 0.55),
-              borderRadius: BorderRadius.circular(AppRadius.r18),
+              color: Colors.white.withOpacity(focused ? 0.64 : 0.56),
+              borderRadius: AppRadius.r18,
               border: Border.all(
                 color: focused
-                    ? const Color(0xFF6B7CFF).withOpacity(0.45)
-                    : Colors.white.withOpacity(0.60),
+                    ? AppColors.secondary.withOpacity(0.38)
+                    : AppColors.borderBase(0.85),
                 width: focused ? 1.2 : 1.0,
               ),
               boxShadow: focused
                   ? [
                 BoxShadow(
-                  color: const Color(0xFF6B7CFF).withOpacity(0.15),
+                  color: AppColors.secondary.withOpacity(0.12),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 )
               ]
-                  : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 8),
-                )
-              ],
+                  : AppShadows.soft,
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.search_rounded,
                   size: 20,
-                  color: const Color(0xFF1E2235).withOpacity(0.70),
+                  color: AppColors.ink.withOpacity(0.65),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     focusNode: searchFocus,
                     controller: searchCtrl,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1E2235),
+                      color: AppColors.ink,
                     ),
                     decoration: InputDecoration(
                       hintText: "Search in shop",
                       hintStyle: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF7A7E92).withOpacity(0.75),
+                        color: AppColors.muted.withOpacity(0.95),
                       ),
                       border: InputBorder.none,
                       isDense: true,
@@ -606,12 +605,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(width: 4),
-
-                // ✅ Filter puck: NO hover. Press glow/scale wrapper.
                 _PressGlowScale(
                   onTap: () {},
                   downScale: 0.94,
-                  glowColor: const Color(0xFF6B7CFF).withOpacity(0.16),
+                  glowColor: AppColors.secondary.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(999),
                   child: _GlassIconPuck(
                     icon: Icons.tune_rounded,
@@ -641,31 +638,39 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
           return Padding(
             padding: const EdgeInsets.only(right: 10),
             child: _PressGlowScale(
-              onTap: () => setState(() => selectedCategory = i),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => selectedCategory = i);
+              },
               downScale: 0.965,
-              glowColor: (active
-                  ? Colors.white.withOpacity(0.28)
-                  : const Color(0xFF6B7CFF).withOpacity(0.10))
-                  .withOpacity(1),
-              borderRadius: BorderRadius.circular(AppRadius.r22),
+              glowColor: active
+                  ? AppColors.secondary.withOpacity(0.16)
+                  : AppColors.secondary.withOpacity(0.08),
+              borderRadius: AppRadius.r22,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
+                borderRadius: AppRadius.r22,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                     decoration: BoxDecoration(
-                      color: active
-                          ? const Color(0xFF1E2235).withOpacity(0.86)
-                          : Colors.white.withOpacity(0.52),
-                      borderRadius: BorderRadius.circular(AppRadius.r22),
+                      borderRadius: AppRadius.r22,
+                      gradient: active
+                          ? AppColors.brandLinear
+                          : LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.62),
+                          Colors.white.withOpacity(0.46),
+                        ],
+                      ),
                       border: Border.all(
                         color: active
-                            ? Colors.white.withOpacity(0.60)
-                            : Colors.white.withOpacity(0.62),
+                            ? Colors.white.withOpacity(0.22)
+                            : AppColors.borderBase(0.85),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -680,7 +685,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
-                        color: active ? Colors.white : const Color(0xFF1E2235),
+                        color: active ? Colors.white : AppColors.ink,
                       ),
                     ),
                   ),
@@ -736,46 +741,37 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const ProductScreen(
-              productName: "Classic Watch",
-              shopName: "Urban Style Store",
+            builder: (_) => ProductScreen(
+              productName: p.$1,
+              shopName: widget.shopName,
             ),
           ),
         );
       },
       downScale: 0.975,
-      glowColor: const Color(0xFF6B7CFF).withOpacity(0.12),
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      glowColor: AppColors.secondary.withOpacity(0.12),
+      borderRadius: AppRadius.r18,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.56),
-              borderRadius: BorderRadius.circular(AppRadius.r18),
-              border: Border.all(color: Colors.white.withOpacity(0.62)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 18,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+              color: Colors.white.withOpacity(0.58),
+              borderRadius: AppRadius.r18,
+              border: Border.all(color: AppColors.borderBase(0.85)),
+              boxShadow: AppShadows.soft,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
                         Image.network(p.$3, fit: BoxFit.cover),
-
-                        // glossy highlight
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -788,16 +784,13 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-
-                        // top-right quick add button (auth press style)
                         Positioned(
                           top: 10,
                           right: 10,
                           child: _PressGlowScale(
                             onTap: () {},
                             downScale: 0.94,
-                            glowColor:
-                            const Color(0xFFFF6BD6).withOpacity(0.12),
+                            glowColor: AppColors.other.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(999),
                             child: _GlassIconPuck(
                               icon: Icons.add_rounded,
@@ -814,10 +807,15 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Title3D(
+                      Text(
                         p.$1,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w900,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body().copyWith(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.ink,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -825,7 +823,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFF1E2235).withOpacity(0.92),
+                          color: AppColors.ink.withOpacity(0.92),
                         ),
                       ),
                     ],
@@ -850,24 +848,26 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Title3D(
+            Text(
               "★★★★★  4.8",
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+              style: AppText.h2().copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               "Based on 320 reviews",
-              style: TextStyle(
+              style: AppText.body().copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF7A7E92).withOpacity(0.95),
+                color: AppColors.muted,
               ),
             ),
             const SizedBox(height: 12),
             const _SoftDivider(),
             const SizedBox(height: 12),
-
             _reviewRow(
               name: "Hassan",
               text: "Fast delivery and great quality. The packaging was premium.",
@@ -882,23 +882,21 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               stars: 5,
             ),
             const SizedBox(height: 10),
-
             Align(
               alignment: Alignment.centerLeft,
               child: _PressGlowScale(
                 onTap: () {},
                 downScale: 0.96,
-                glowColor: const Color(0xFF6B7CFF).withOpacity(0.12),
+                glowColor: AppColors.secondary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(999),
                 child: Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   child: Text(
                     "View all reviews",
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF1E2235).withOpacity(0.92),
+                      color: AppColors.ink.withOpacity(0.92),
                     ),
                   ),
                 ),
@@ -928,10 +926,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E2235),
+                      color: AppColors.ink,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -941,9 +939,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                           (i) => Icon(
                         Icons.star_rounded,
                         size: 14,
-                        color: i < stars
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFFD6D7DE),
+                        color: i < stars ? const Color(0xFFF59E0B) : const Color(0xFFD6D7DE),
                       ),
                     ),
                   ),
@@ -952,11 +948,11 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               const SizedBox(height: 6),
               Text(
                 text,
-                style: TextStyle(
+                style: AppText.body().copyWith(
                   fontSize: 12.8,
                   fontWeight: FontWeight.w700,
                   height: 1.25,
-                  color: const Color(0xFF7A7E92).withOpacity(0.95),
+                  color: AppColors.muted,
                 ),
               ),
             ],
@@ -968,7 +964,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 }
 
 // ============================================================================
-// ✅ PRESS + LIGHT-UP interactions (NO HOVER) — works mobile + web
+// ✅ Press Glow Scale (no hover)
 // ============================================================================
 
 class _PressGlowScale extends StatefulWidget {
@@ -979,7 +975,6 @@ class _PressGlowScale extends StatefulWidget {
   final Duration duration;
   final BorderRadius borderRadius;
 
-  /// glow “light up”
   final Color glowColor;
   final double glowBlur;
   final Offset glowOffset;
@@ -1044,16 +1039,20 @@ class _PressGlowScaleState extends State<_PressGlowScale> {
 }
 
 // ============================================================================
-// ✅ Helpers (Auth theme-compatible)
+// ✅ Helpers
 // ============================================================================
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -1069,8 +1068,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFFFF6BD6).withOpacity(opacity * 0.65),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.65),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],
@@ -1100,29 +1099,23 @@ class _GlassCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r18),
-              border: Border.all(color: Colors.white.withOpacity(0.60)),
+              borderRadius: AppRadius.r18,
+              border: Border.all(color: AppColors.borderBase(0.85)),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.68),
-                  Colors.white.withOpacity(0.44),
+                  Colors.white.withOpacity(0.70),
+                  Colors.white.withOpacity(0.46),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
-                  blurRadius: 22,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+              boxShadow: AppShadows.soft,
             ),
             child: Stack(
               children: [
@@ -1130,7 +1123,7 @@ class _GlassCard extends StatelessWidget {
                   child: IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.r18),
+                        borderRadius: AppRadius.r18,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -1175,9 +1168,9 @@ class _InfoPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.50),
+            color: Colors.white.withOpacity(0.52),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.62)),
+            border: Border.all(color: AppColors.borderBase(0.85)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1186,10 +1179,10 @@ class _InfoPill extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E2235),
+                  color: AppColors.ink,
                 ),
               ),
             ],
@@ -1200,8 +1193,7 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-/// ✅ NOTE: This widget NO LONGER uses hover.
-/// We keep its internal press for a subtle native tap, but no MouseRegion.
+/// ✅ No hover. Press handled by wrapper.
 class _GlassIconPuck extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -1228,17 +1220,15 @@ class _GlassIconPuckState extends State<_GlassIconPuck> {
     final scale = _press ? 0.96 : 1.0;
 
     final bg = widget.darkPuck
-        ? const Color(0xFF1E2235).withOpacity(active ? 0.55 : 0.42)
-        : Colors.white.withOpacity(active ? 0.68 : 0.58);
+        ? AppColors.ink.withOpacity(active ? 0.55 : 0.42)
+        : Colors.white.withOpacity(active ? 0.70 : 0.58);
 
     final border = widget.darkPuck
         ? Colors.white.withOpacity(active ? 0.55 : 0.40)
-        : Colors.white.withOpacity(active ? 0.86 : 0.70);
+        : AppColors.borderBase(active ? 0.95 : 0.85);
 
     final iconColor = widget.iconColor ??
-        (widget.darkPuck
-            ? Colors.white
-            : const Color(0xFF1E2235).withOpacity(0.75));
+        (widget.darkPuck ? Colors.white : AppColors.ink.withOpacity(0.75));
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1277,85 +1267,6 @@ class _GlassIconPuckState extends State<_GlassIconPuck> {
   }
 }
 
-class _Title3D extends StatelessWidget {
-  final String text;
-  final double fontSize;
-  final FontWeight fontWeight;
-
-  const _Title3D(
-      this.text, {
-        required this.fontSize,
-        required this.fontWeight,
-      });
-
-  @override
-  Widget build(BuildContext context) {
-    const base = Color(0xFF1B1E2B);
-
-    return RichText(
-      text: TextSpan(
-        children: text.split('').map((ch) {
-          if (ch == ' ') return const TextSpan(text: ' ');
-
-          return WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
-            child: Stack(
-              children: [
-                Transform.translate(
-                  offset: const Offset(0.9, 1.1),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: base.withOpacity(0.18),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(0.0, 0.8),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: base.withOpacity(0.10),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(-0.5, -0.6),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: Colors.white.withOpacity(0.55),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Text(
-                  ch,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: fontWeight,
-                    color: base,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
 class _Welcome3DTitleCentered extends StatelessWidget {
   final String text;
   final double fontSize;
@@ -1381,27 +1292,30 @@ class _Welcome3DTitleCentered extends StatelessWidget {
               ),
             ),
           ),
-        Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.manrope(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-            color: const Color(0xFF1E2235),
-            shadows: [
-              Shadow(
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
-              ),
-              Shadow(
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
+        ShaderMask(
+          shaderCallback: (rect) => AppColors.brandLinear.createShader(rect),
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.6,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                  color: AppColors.secondary.withOpacity(0.14),
+                ),
+                Shadow(
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.10),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1421,28 +1335,17 @@ class _Avatar3D extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.chipFill,
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.85),
-            blurRadius: 12,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        color: Colors.white.withOpacity(0.70),
+        border: Border.all(color: AppColors.borderBase(0.85)),
+        boxShadow: AppShadows.soft,
       ),
       alignment: Alignment.center,
       child: Text(
         letter,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w900,
-          color: AppColors.textDark,
+          color: AppColors.ink,
         ),
       ),
     );
@@ -1457,7 +1360,7 @@ class _SoftDivider extends StatelessWidget {
     return Divider(
       height: 18,
       thickness: 1,
-      color: AppColors.divider.withOpacity(0.65),
+      color: AppColors.borderBase(0.70),
     );
   }
 }
@@ -1494,15 +1397,8 @@ class _Shiny3DButton extends StatelessWidget {
             child: Container(
               height: 54,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1E2235),
-                    Color(0xFF3A3F67),
-                  ],
-                ),
+                borderRadius: AppRadius.r22,
+                gradient: AppColors.brandLinear,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.18),
@@ -1515,7 +1411,7 @@ class _Shiny3DButton extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.r22),
+                      borderRadius: AppRadius.r22,
                       child: Opacity(
                         opacity: 0.22,
                         child: Transform.rotate(

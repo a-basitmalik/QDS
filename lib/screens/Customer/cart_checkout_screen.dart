@@ -1,13 +1,15 @@
-// ✅ COMPLETE updated Checkout screen — MATCHES your FINAL Login/Signup theme
-// CHANGES YOU ASKED (DONE):
-// 1) ❌ Removed ALL hover-only animations (MouseRegion hover).
-// 2) ✅ Added press/click zoom + “light up glow” that works on BOTH mobile + web.
-// 3) ✅ Kept everything else same: layout, functionality, step tracking, scroll, dialogs, animations.
-// 4) ✅ Refined UI to match Nexora/Auth glassmorphism: soft gradient, glow blobs, frosted cards, 3D title, premium depth.
-// NOTE: This file is self-contained and will compile as-is (no missing helpers).
+// ✅ COMPLETE updated Checkout screen — MATCHES your FINAL Theme (AppColors/AppRadius/AppShadows/AppText)
+// FIXED (so it compiles with your theme files):
+// - ❌ Removed AppColors.bg / textDark / textMid / divider (not in your theme)
+// - ❌ Removed AppShadows.topCap (not in your theme)
+// - ✅ Uses AppColors.bg1/bg2/bg3, ink, muted, borderBase(), brandLinear, primary/secondary/other
+// - ✅ Uses AppRadius + AppShadows.soft everywhere
+// - ✅ Keeps: layout, sticky header, step tracking, scroll, dialogs, animations, bottom CTA, success sheet
+// NOTE: Self-contained helpers included (PressGlowScale etc.)
 
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -175,10 +177,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
         _capBaseH + topInset + _stickyHeaderH + 10 + _stickyStepsH + 16;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bg3,
       body: Stack(
         children: [
-          // ✅ Light themed animated background (auth vibe)
+          // ✅ Animated theme background
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (context, _) {
@@ -188,21 +190,9 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color.lerp(
-                        const Color(0xFFF5F8FF),
-                        const Color(0xFFEAF0FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFEFF6FF),
-                        const Color(0xFFEAF9FF),
-                        _bgT.value,
-                      )!,
-                      Color.lerp(
-                        const Color(0xFFF7F7FA),
-                        const Color(0xFFF1F4FF),
-                        _bgT.value,
-                      )!,
+                      Color.lerp(AppColors.bg3, AppColors.bg2, _bgT.value)!,
+                      Color.lerp(AppColors.bg2, AppColors.bg1, _bgT.value)!,
+                      AppColors.bg1,
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -211,7 +201,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             },
           ),
 
-          // ✅ Subtle haze overlay (like signup)
+          // ✅ Subtle haze overlay
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -225,16 +215,16 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                       lerpDouble(10, -10, t)!,
                     ),
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: RadialGradient(
-                          center: Alignment(0.2, -0.6),
+                          center: const Alignment(0.2, -0.6),
                           radius: 1.25,
                           colors: [
-                            Color(0xFFB9C7FF),
-                            Color(0xFFBCE9FF),
+                            AppColors.secondary.withOpacity(0.30),
+                            AppColors.primary.withOpacity(0.22),
                             Colors.transparent,
                           ],
-                          stops: [0.0, 0.42, 1.0],
+                          stops: const [0.0, 0.42, 1.0],
                         ),
                       ),
                     ),
@@ -244,7 +234,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             ),
           ),
 
-          // ✅ Floating blobs (auth style)
+          // ✅ Floating blobs (theme colors)
           IgnorePointer(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -257,18 +247,24 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                       dy: lerpDouble(86, 58, t)!,
                       size: 230,
                       opacity: 0.14,
+                      a: AppColors.secondary,
+                      b: AppColors.other,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(240, 290, t)!,
                       dy: lerpDouble(240, 200, t)!,
                       size: 270,
                       opacity: 0.11,
+                      a: AppColors.primary,
+                      b: AppColors.secondary,
                     ),
                     _GlowBlob(
                       dx: lerpDouble(210, 250, 1 - t)!,
                       dy: lerpDouble(28, 18, t)!,
                       size: 210,
                       opacity: 0.09,
+                      a: AppColors.other,
+                      b: AppColors.secondary,
                     ),
                   ],
                 );
@@ -276,7 +272,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             ),
           ),
 
-          // ✅ Top cap (unchanged shape)
+          // ✅ Top cap (unchanged shape, theme shadows)
           const _CheckoutTopCap(),
 
           // ✅ Content
@@ -348,7 +344,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           _stickyCenteredHeader(context),
           _stickyStepCards(context),
 
-          // ✅ Bottom CTA (same functionality)
+          // ✅ Bottom CTA
           _bottomCTA(context),
         ],
       ),
@@ -366,7 +362,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       right: 12,
       child: _PressGlowScale(
         downScale: 0.992,
-        glowColor: const Color(0xFF6B7CFF).withOpacity(0.10),
+        glowColor: AppColors.secondary.withOpacity(0.10),
         borderRadius: BorderRadius.circular(18),
         onTap: () {}, // decorative press
         child: ClipRRect(
@@ -387,19 +383,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                   ],
                 ),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.68)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 18,
-                    offset: const Offset(0, 12),
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF6B7CFF).withOpacity(0.08),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                border: Border.all(color: AppColors.borderBase(0.85)),
+                boxShadow: AppShadows.soft,
               ),
               child: Stack(
                 alignment: Alignment.center,
@@ -408,7 +393,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                     alignment: Alignment.centerLeft,
                     child: _PressGlowScale(
                       downScale: 0.94,
-                      glowColor: const Color(0xFF6B7CFF).withOpacity(0.12),
+                      glowColor: AppColors.secondary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(14),
                       onTap: () => Navigator.pop(context),
                       child: _IconPillButton(
@@ -422,7 +407,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                     alignment: Alignment.centerRight,
                     child: _PressGlowScale(
                       downScale: 0.94,
-                      glowColor: const Color(0xFFFF6BD6).withOpacity(0.10),
+                      glowColor: AppColors.other.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(14),
                       onTap: () {},
                       child: _IconPillButton(
@@ -491,21 +476,21 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           child: TextField(
             controller: addressCtrl,
             maxLines: 2,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: AppColors.textDark,
+              color: AppColors.ink,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: "Enter delivery address",
               hintStyle: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF9AA0AA),
+                color: AppColors.muted.withOpacity(0.95),
               ),
               border: InputBorder.none,
               isDense: true,
-              contentPadding: EdgeInsets.only(top: 6, bottom: 2),
+              contentPadding: const EdgeInsets.only(top: 6, bottom: 2),
             ),
           ),
         ),
@@ -514,7 +499,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           alignment: Alignment.centerLeft,
           child: _PressGlowScale(
             downScale: 0.97,
-            glowColor: const Color(0xFF6B7CFF).withOpacity(0.10),
+            glowColor: AppColors.secondary.withOpacity(0.10),
             borderRadius: BorderRadius.circular(14),
             onTap: () {},
             child: _GhostAction(
@@ -536,21 +521,21 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       child: TextField(
         controller: phoneCtrl,
         keyboardType: TextInputType.phone,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w800,
-          color: AppColors.textDark,
+          color: AppColors.ink,
         ),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           hintText: "03XX-XXXXXXX",
           hintStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF9AA0AA),
+            color: AppColors.muted.withOpacity(0.95),
           ),
           border: InputBorder.none,
           isDense: true,
-          contentPadding: EdgeInsets.only(top: 6, bottom: 2),
+          contentPadding: const EdgeInsets.only(top: 6, bottom: 2),
         ),
       ),
     );
@@ -593,53 +578,33 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     return _PressGlowScale(
       downScale: 0.985,
       glowColor: (active
-          ? const Color(0xFF6B7CFF).withOpacity(0.14)
+          ? AppColors.secondary.withOpacity(0.14)
           : Colors.black.withOpacity(0.05))
           .withOpacity(1),
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      borderRadius: AppRadius.r18,
       onTap: enabled ? () => setState(() => paymentMethod = index) : null,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
+          borderRadius: AppRadius.r18,
           border: Border.all(
             color: active && isCashOnDelivery
-                ? const Color(0xFF1E2235).withOpacity(0.28)
+                ? Colors.white.withOpacity(0.20)
                 : active
-                ? const Color(0xFF111827).withOpacity(0.14)
-                : const Color(0xFF111827).withOpacity(0.08),
+                ? AppColors.borderBase(0.85)
+                : AppColors.borderBase(0.70),
           ),
-          gradient: LinearGradient(
+          gradient: active && isCashOnDelivery
+              ? AppColors.brandLinear
+              : LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: active && isCashOnDelivery
-                ? const [
-              Color(0xFF1E2235),
-              Color(0xFF3A3F67),
-            ]
-                : active
-                ? [
-              Colors.white.withOpacity(0.95),
-              const Color(0xFFF7F8FA).withOpacity(0.95),
-            ]
-                : [
-              Colors.white.withOpacity(0.92),
-              const Color(0xFFF7F8FA).withOpacity(0.92),
+            colors: [
+              Colors.white.withOpacity(active ? 0.95 : 0.92),
+              Colors.white.withOpacity(active ? 0.88 : 0.86),
             ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(active ? 0.12 : 0.08),
-              blurRadius: active ? 28 : 22,
-              offset: const Offset(0, 16),
-            ),
-            BoxShadow(
-              color: Colors.white.withOpacity(0.90),
-              blurRadius: 10,
-              offset: const Offset(0, -6),
-              spreadRadius: -5,
-            ),
-          ],
+          boxShadow: AppShadows.soft,
         ),
         child: Row(
           children: [
@@ -662,8 +627,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                       color: active && isCashOnDelivery
                           ? Colors.white
                           : enabled
-                          ? AppColors.textDark
-                          : AppColors.textMid.withOpacity(0.7),
+                          ? AppColors.ink
+                          : AppColors.muted.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -676,7 +641,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                       fontWeight: FontWeight.w700,
                       color: active && isCashOnDelivery
                           ? Colors.white.withOpacity(0.85)
-                          : AppColors.textMid.withOpacity(enabled ? 1 : 0.6),
+                          : AppColors.muted.withOpacity(enabled ? 1 : 0.6),
                       height: 1.15,
                     ),
                   ),
@@ -691,26 +656,24 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
               color: active && isCashOnDelivery
                   ? Colors.white
                   : active
-                  ? const Color(0xFF4B5563).withOpacity(0.85)
-                  : const Color(0xFF9CA3AF).withOpacity(enabled ? 0.60 : 0.30),
+                  ? AppColors.ink.withOpacity(0.65)
+                  : AppColors.muted.withOpacity(enabled ? 0.65 : 0.35),
             ),
             if (!enabled) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: const Color(0xFFD1D5DB).withOpacity(0.8),
-                  ),
+                  color: Colors.white.withOpacity(0.92),
+                  borderRadius: AppRadius.pill(),
+                  border: Border.all(color: AppColors.borderBase(0.75)),
                 ),
-                child: const Text(
+                child: Text(
                   "Soon",
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.muted.withOpacity(0.95),
                   ),
                 ),
               ),
@@ -720,6 +683,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       ),
     );
   }
+
 
   Widget _iconChipLight(
       IconData icon, {
@@ -732,25 +696,14 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         color: isCashOnDeliveryActive
-            ? const Color(0xFF2A2F45).withOpacity(0.8)
+            ? Colors.white.withOpacity(0.20)
             : Colors.white.withOpacity(0.95),
         border: Border.all(
           color: isCashOnDeliveryActive
-              ? const Color(0xFF3A3F67).withOpacity(0.6)
-              : const Color(0xFFE5E7EB).withOpacity(0.9),
+              ? Colors.white.withOpacity(0.28)
+              : AppColors.borderBase(0.80),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.9),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        boxShadow: AppShadows.soft,
       ),
       child: Icon(
         icon,
@@ -758,8 +711,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
         color: isCashOnDeliveryActive
             ? Colors.white
             : enabled
-            ? const Color(0xFF4B5563).withOpacity(0.85)
-            : const Color(0xFF9CA3AF).withOpacity(0.6),
+            ? AppColors.ink.withOpacity(0.80)
+            : AppColors.muted.withOpacity(0.70),
       ),
     );
   }
@@ -775,7 +728,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
-            color: AppColors.textMid.withOpacity(0.9),
+            color: AppColors.muted.withOpacity(0.95),
           ),
         ),
         const SizedBox(height: 10),
@@ -808,26 +761,26 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                 Expanded(
                   child: Text(
                     "${e["name"]} ×${e["qty"]}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
+                      color: AppColors.ink,
                     ),
                   ),
                 ),
                 Text(
                   "Rs. ${(e["price"] as int) * (e["qty"] as int)}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: AppColors.ink,
                   ),
                 ),
               ],
             ),
           ),
         ),
-        Divider(height: 18, color: AppColors.divider.withOpacity(0.8)),
+        Divider(height: 18, color: AppColors.borderBase(0.75)),
         _summaryRow("Subtotal", "Rs. $subtotal"),
         _summaryRow("Delivery", "Rs. $deliveryFee"),
         const SizedBox(height: 8),
@@ -847,7 +800,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
-                color: bold ? AppColors.textDark : AppColors.textMid,
+                color: bold ? AppColors.ink : AppColors.muted,
               ),
             ),
           ),
@@ -856,7 +809,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
-              color: AppColors.textDark,
+              color: AppColors.ink,
             ),
           ),
         ],
@@ -873,8 +826,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
   }) {
     return _PressGlowScale(
       downScale: 0.992,
-      glowColor: const Color(0xFF6B7CFF).withOpacity(0.10),
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      glowColor: AppColors.secondary.withOpacity(0.10),
+      borderRadius: AppRadius.r18, // ✅ fixed
       onTap: () {}, // decorative press
       child: _LightWhitishCard(
         floatingT: _floatT.value,
@@ -886,16 +839,17 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
               children: [
                 _PressGlowScale(
                   downScale: 0.95,
-                  glowColor: const Color(0xFFFF6BD6).withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(12),
+                  glowColor: AppColors.other.withOpacity(0.10),
+                  borderRadius: AppRadius.r12, // ✅ fixed (matches your AppRadius)
                   onTap: () {},
                   child: _IconBadgeLight(icon: icon),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   title,
-                  style: AppText.h18.copyWith(
-                    color: AppColors.textDark,
+                  style: AppText.h2().copyWith(
+                    fontSize: 18,
+                    color: AppColors.ink,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -908,6 +862,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       ),
     );
   }
+
 
   // ───────────────────────── Bottom CTA ─────────────────────────
 
@@ -934,16 +889,16 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textMid.withOpacity(0.95),
+                          color: AppColors.muted.withOpacity(0.95),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         "Rs. $total",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 16,
-                          color: AppColors.textDark,
+                          color: AppColors.ink,
                         ),
                       ),
                     ],
@@ -1003,42 +958,30 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     );
   }
 
-  // ───────────────────────── Inputs (LIGHT WHITISH rows) ─────────────────────────
+  // ───────────────────────── Inputs (LIGHT rows) ─────────────────────────
 
   Widget _lightWhitishFieldRow({
     required IconData leading,
     required Widget child,
   }) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      borderRadius: AppRadius.r18,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.92),
-            borderRadius: BorderRadius.circular(AppRadius.r18),
-            border: Border.all(color: Colors.white.withOpacity(0.95)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.9),
-                blurRadius: 15,
-                offset: const Offset(0, -8),
-                spreadRadius: -5,
-              ),
-            ],
+            borderRadius: AppRadius.r18,
+            border: Border.all(color: AppColors.borderBase(0.90)),
+            boxShadow: AppShadows.soft,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _PressGlowScale(
                 downScale: 0.94,
-                glowColor: const Color(0xFF6B7CFF).withOpacity(0.10),
+                glowColor: AppColors.secondary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {},
                 child: _alignedLeadingIconLight(leading),
@@ -1060,21 +1003,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB).withOpacity(0.9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.9),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderBase(0.80)),
+        boxShadow: AppShadows.soft,
       ),
-      child: Icon(icon, size: 18, color: AppColors.textDark),
+      child: Icon(icon, size: 18, color: AppColors.ink),
     );
   }
 
@@ -1091,20 +1023,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.92),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.95)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.9),
-                blurRadius: 12,
-                offset: const Offset(0, -6),
-                spreadRadius: -4,
-              ),
-            ],
+            border: Border.all(color: AppColors.borderBase(0.90)),
+            boxShadow: AppShadows.soft,
           ),
           child: Row(
             children: [
@@ -1112,10 +1032,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                 width: 76,
                 child: Text(
                   leftLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: AppColors.ink,
                   ),
                 ),
               ),
@@ -1123,10 +1043,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
               Expanded(
                 child: Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
+                    color: AppColors.ink,
                   ),
                 ),
               ),
@@ -1155,9 +1075,9 @@ class _CheckoutTopCap extends StatelessWidget {
         clipper: _CheckoutHeaderClipper(),
         child: Container(
           height: _CartCheckoutScreenState._capBaseH + topInset,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: AppShadows.topCap,
+            boxShadow: AppShadows.soft,
           ),
         ),
       ),
@@ -1193,11 +1113,15 @@ class _CheckoutHeaderClipper extends CustomClipper<Path> {
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -1213,8 +1137,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFFFF6BD6).withOpacity(opacity * 0.65),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.65),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],
@@ -1226,7 +1150,7 @@ class _GlowBlob extends StatelessWidget {
   }
 }
 
-// ───────────────────── LIGHT WHITISH CARDS ─────────────────────
+// ───────────────────── LIGHT CARDS ─────────────────────
 
 class _LightWhitishCard extends StatelessWidget {
   final Widget child;
@@ -1246,14 +1170,14 @@ class _LightWhitishCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.r18),
-              border: Border.all(color: Colors.white.withOpacity(0.92)),
+              borderRadius: AppRadius.r18,
+              border: Border.all(color: AppColors.borderBase(0.90)),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1262,33 +1186,15 @@ class _LightWhitishCard extends StatelessWidget {
                   Colors.white.withOpacity(0.56),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
-                  blurRadius: 26,
-                  offset: const Offset(0, 18),
-                ),
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.90),
-                  blurRadius: 16,
-                  offset: const Offset(0, -10),
-                  spreadRadius: -8,
-                ),
-                BoxShadow(
-                  color: const Color(0xFF6B7CFF).withOpacity(0.06),
-                  blurRadius: 22,
-                  offset: const Offset(0, 14),
-                ),
-              ],
+              boxShadow: AppShadows.soft,
             ),
             child: Stack(
               children: [
-                // specular highlight
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.r18),
+                        borderRadius: AppRadius.r18,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -1325,21 +1231,10 @@ class _IconBadgeLight extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB).withOpacity(0.9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.9),
-            blurRadius: 14,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderBase(0.80)),
+        boxShadow: AppShadows.soft,
       ),
-      child: Icon(icon, color: AppColors.textDark, size: 18),
+      child: Icon(icon, color: AppColors.ink, size: 18),
     );
   }
 }
@@ -1370,15 +1265,7 @@ class _Title3DHolo extends StatelessWidget {
             ),
           ),
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF111827),
-              Color(0xFF3A3F67),
-              Color(0xFF111827),
-            ],
-          ).createShader(rect),
+          shaderCallback: (rect) => AppColors.brandLinear.createShader(rect),
           child: Text(
             text,
             style: TextStyle(
@@ -1390,7 +1277,7 @@ class _Title3DHolo extends StatelessWidget {
                 Shadow(
                   blurRadius: 18,
                   offset: const Offset(0, 10),
-                  color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                  color: AppColors.secondary.withOpacity(0.18),
                 ),
                 Shadow(
                   blurRadius: 10,
@@ -1424,7 +1311,7 @@ class _StepCard extends StatelessWidget {
     return _PressGlowScale(
       downScale: 0.97,
       glowColor: active
-          ? const Color(0xFF6B7CFF).withOpacity(0.10)
+          ? AppColors.secondary.withOpacity(0.10)
           : Colors.black.withOpacity(0.05),
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
@@ -1432,27 +1319,11 @@ class _StepCard extends StatelessWidget {
         height: 46,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          color: active
-              ? Colors.white.withOpacity(0.95)
-              : Colors.white.withOpacity(0.85),
+          color: Colors.white.withOpacity(active ? 0.95 : 0.88),
           border: Border.all(
-            color: active
-                ? const Color(0xFF4B5563).withOpacity(0.15)
-                : const Color(0xFFD1D5DB).withOpacity(0.8),
+            color: active ? AppColors.borderBase(0.85) : AppColors.borderBase(0.70),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(active ? 0.10 : 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 12),
-            ),
-            BoxShadow(
-              color: Colors.white.withOpacity(0.9),
-              blurRadius: 12,
-              offset: const Offset(0, -6),
-              spreadRadius: -4,
-            ),
-          ],
+          boxShadow: AppShadows.soft,
         ),
         alignment: Alignment.center,
         child: Text(
@@ -1460,9 +1331,7 @@ class _StepCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w900,
-            color: active
-                ? const Color(0xFF111827).withOpacity(0.95)
-                : const Color(0xFF6B7280).withOpacity(0.8),
+            color: active ? AppColors.ink.withOpacity(0.95) : AppColors.muted.withOpacity(0.90),
           ),
         ),
       ),
@@ -1493,18 +1362,12 @@ class _IconPillButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E7EB).withOpacity(0.9)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: AppColors.borderBase(0.80)),
+          boxShadow: AppShadows.soft,
         ),
         child: Icon(
           icon,
-          color: muted ? AppColors.textMid.withOpacity(0.9) : AppColors.textDark,
+          color: muted ? AppColors.muted.withOpacity(0.95) : AppColors.ink,
         ),
       ),
     );
@@ -1537,25 +1400,19 @@ class _GhostAction extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.92),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE5E7EB).withOpacity(0.9)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: AppColors.borderBase(0.80)),
+              boxShadow: AppShadows.soft,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: AppColors.textDark),
+                Icon(icon, size: 18, color: AppColors.ink),
                 const SizedBox(width: 8),
                 Text(
                   text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: AppColors.ink,
                   ),
                 ),
               ],
@@ -1601,12 +1458,8 @@ class _ShinyCTAButton extends StatelessWidget {
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E2235), Color(0xFF3A3F67)],
-                ),
+                borderRadius: AppRadius.r22,
+                gradient: AppColors.brandLinear,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.18),
@@ -1619,7 +1472,7 @@ class _ShinyCTAButton extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.r22),
+                      borderRadius: AppRadius.r22,
                       child: Opacity(
                         opacity: 0.20,
                         child: Transform.rotate(
@@ -1661,7 +1514,6 @@ class _ShinyCTAButton extends StatelessWidget {
 }
 
 // ───────────────────── PRESS + LIGHT-UP (NO HOVER) ─────────────────────
-// Works mobile + web (click/tap). Replaces hover widgets everywhere.
 
 class _PressGlowScale extends StatefulWidget {
   final Widget child;
@@ -1813,27 +1665,10 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                 ),
                                 borderRadius: BorderRadius.circular(28),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.78),
+                                  color: AppColors.borderBase(0.90),
                                   width: 1.5,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.12),
-                                    blurRadius: 36,
-                                    offset: const Offset(0, 22),
-                                  ),
-                                  BoxShadow(
-                                    color: const Color(0xFF6B7CFF).withOpacity(0.06),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 16),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.88),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, -14),
-                                    spreadRadius: -12,
-                                  ),
-                                ],
+                                boxShadow: AppShadows.soft,
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1842,8 +1677,7 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                     scale: lerpDouble(0.60, 1.0, _tickPop.value)!,
                                     child: ClipOval(
                                       child: BackdropFilter(
-                                        filter:
-                                        ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                                         child: Container(
                                           width: 118,
                                           height: 118,
@@ -1858,71 +1692,51 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                               ],
                                             ),
                                             border: Border.all(
-                                              color: Colors.white.withOpacity(0.88),
+                                              color: AppColors.borderBase(0.90),
                                               width: 1.8,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.14),
-                                                blurRadius: 30,
-                                                offset: const Offset(0, 20),
-                                              ),
-                                              BoxShadow(
-                                                color: Colors.white.withOpacity(0.92),
-                                                blurRadius: 24,
-                                                offset: const Offset(0, -14),
-                                                spreadRadius: -10,
-                                              ),
-                                              BoxShadow(
-                                                color: const Color(0xFF6B7CFF)
-                                                    .withOpacity(0.10),
-                                                blurRadius: 26,
-                                                offset: const Offset(0, 12),
-                                              ),
-                                            ],
+                                            boxShadow: AppShadows.soft,
                                           ),
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.check_rounded,
                                             size: 66,
-                                            color: Color(0xFF4B5563),
+                                            color: AppColors.ink.withOpacity(0.75),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(height: 22),
-                                  const Text(
+                                  Text(
                                     "Order Confirmed",
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,
-                                      color: Color(0xFF111827),
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
+                                  Text(
                                     "Preparing your delivery…",
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF6B7280),
+                                      color: AppColors.muted,
                                     ),
                                   ),
                                   const SizedBox(height: 22),
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(999),
                                     child: BackdropFilter(
-                                      filter:
-                                      ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                                       child: Container(
                                         height: 12,
                                         width: 240,
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.45),
-                                          borderRadius:
-                                          BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(999),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.65),
+                                            color: AppColors.borderBase(0.80),
                                           ),
                                         ),
                                         child: Align(
@@ -1933,14 +1747,11 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(
                                                   colors: [
-                                                    const Color(0xFF4B5563)
-                                                        .withOpacity(0.35),
-                                                    const Color(0xFF6B7280)
-                                                        .withOpacity(0.45),
+                                                    AppColors.secondary.withOpacity(0.28),
+                                                    AppColors.primary.withOpacity(0.35),
                                                   ],
                                                 ),
-                                                borderRadius:
-                                                BorderRadius.circular(999),
+                                                borderRadius: BorderRadius.circular(999),
                                               ),
                                             ),
                                           ),
@@ -1949,12 +1760,12 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  const Text(
+                                  Text(
                                     "Redirecting…",
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
-                                      color: Color(0xFF6B7280),
+                                      color: AppColors.muted,
                                     ),
                                   ),
                                 ],

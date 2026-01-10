@@ -9,13 +9,12 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 
-/// ✅ Premium Shop Listing Screen (Nexora Theme)
-/// - SAME login/signup premium glassmorphism + animated gradient + glow blobs
-/// - NO hover animations (works identical on Mobile + Web)
-/// - Press/Click zoom + “light-up” glow (mobile + web)
-/// - Sticky centered glass header (no collision)
-/// - Sort chips redesigned to light premium style
-/// - Cards redesigned to premium, consistent typography + spacing
+/// ✅ Premium Shop Listing Screen (YOUR Theme)
+/// - Uses AppColors/AppRadius/AppShadows/AppText
+/// - Animated gradient + glow blobs
+/// - No hover (mobile + web)
+/// - Press scale + glow
+/// - Sticky glass header (no collision)
 class ShopListingScreen extends StatefulWidget {
   final String category;
 
@@ -28,7 +27,8 @@ class ShopListingScreen extends StatefulWidget {
   State<ShopListingScreen> createState() => _ShopListingScreenState();
 }
 
-class _ShopListingScreenState extends State<ShopListingScreen> with TickerProviderStateMixin {
+class _ShopListingScreenState extends State<ShopListingScreen>
+    with TickerProviderStateMixin {
   // Page entrance
   late final AnimationController _pageCtrl;
   late final Animation<double> _fade;
@@ -39,7 +39,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
   late final Animation<double> _bgT;
   late final Animation<double> _floatT;
 
-  // Search (optional)
+  // Search
   final TextEditingController _searchCtrl = TextEditingController();
   bool _showSearch = false;
 
@@ -71,7 +71,8 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
     )..repeat(reverse: true);
 
     _bgT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOut);
-    _floatT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
+    _floatT =
+        CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
 
     _pageCtrl.forward();
   }
@@ -92,93 +93,14 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
     final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 14.0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.bg3,
       body: Stack(
         children: [
-          // ✅ Nexora-style animated background (same as login/signup)
-          AnimatedBuilder(
-            animation: _ambientCtrl,
-            builder: (context, _) {
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.lerp(const Color(0xFFF5F8FF), const Color(0xFFEAF0FF), _bgT.value)!,
-                      Color.lerp(const Color(0xFFEFF6FF), const Color(0xFFFBEFFF), _bgT.value)!,
-                      Color.lerp(const Color(0xFFF7F7FA), const Color(0xFFF1F4FF), _bgT.value)!,
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
-                ),
-              );
-            },
-          ),
+          _animatedBackground(),
+          _hazeOverlay(),
+          _glowBlobs(topInset),
 
-          // ✅ Soft haze overlay (premium atmosphere)
-          IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _ambientCtrl,
-              builder: (context, _) {
-                final t = _floatT.value;
-                return Opacity(
-                  opacity: 0.10,
-                  child: Transform.translate(
-                    offset: Offset(lerpDouble(-14, 14, t)!, lerpDouble(12, -10, t)!),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: RadialGradient(
-                          center: Alignment(0.18, -0.55),
-                          radius: 1.25,
-                          colors: [
-                            Color(0xFFB9C7FF),
-                            Color(0xFFBCE9FF),
-                            Colors.transparent,
-                          ],
-                          stops: [0.0, 0.42, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // ✅ Glow blobs (premium Nexora feel)
-          IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _ambientCtrl,
-              builder: (context, _) {
-                final t = _floatT.value;
-                return Stack(
-                  children: [
-                    _GlowBlob(
-                      dx: lerpDouble(-45, 18, t)!,
-                      dy: lerpDouble(78, 56, t)!,
-                      size: 250,
-                      opacity: 0.15,
-                    ),
-                    _GlowBlob(
-                      dx: lerpDouble(220, 310, t)!,
-                      dy: lerpDouble(240, 205, t)!,
-                      size: 300,
-                      opacity: 0.11,
-                    ),
-                    _GlowBlob(
-                      dx: lerpDouble(140, 210, 1 - t)!,
-                      dy: lerpDouble(36, 18, t)!,
-                      size: 220,
-                      opacity: 0.10,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          // ✅ Top cap (same family as your other screens)
+          // ✅ Top cap
           Positioned(
             top: -topInset,
             left: 0,
@@ -210,35 +132,35 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
             ),
           ),
 
-          // ✅ Page content (pushed down)
+          // ✅ Page content
           FadeTransition(
             opacity: _fade,
             child: SlideTransition(
               position: _slide,
               child: SafeArea(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(14, contentTopPadding, 14, 16),
+                  padding:
+                  EdgeInsets.fromLTRB(14, contentTopPadding, 14, 16),
                   child: Column(
                     children: [
-                      // Search bar (optional)
                       AnimatedCrossFade(
                         duration: const Duration(milliseconds: 220),
-                        crossFadeState: _showSearch ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                        crossFadeState: _showSearch
+                            ? CrossFadeState.showFirst
+                            : CrossFadeState.showSecond,
                         firstChild: Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _SearchGlassField(
                             controller: _searchCtrl,
                             hint: "Search shops in ${widget.category}",
-                            onChanged: (v) => setState(() {}),
+                            onChanged: (_) => setState(() {}),
                             onClear: () => setState(() => _searchCtrl.clear()),
                           ),
                         ),
                         secondChild: const SizedBox.shrink(),
                       ),
-
                       _sortBar(),
                       const SizedBox(height: 10),
-
                       Expanded(child: _list()),
                     ],
                   ),
@@ -247,9 +169,102 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
             ),
           ),
 
-          // ✅ Sticky centered header (glass, click animation, no hover)
           _stickyCenteredHeader(context),
         ],
+      ),
+    );
+  }
+
+  // ───────────────────── Background ─────────────────────
+
+  Widget _animatedBackground() {
+    return AnimatedBuilder(
+      animation: _ambientCtrl,
+      builder: (context, _) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.lerp(AppColors.bg3, AppColors.bg2, _bgT.value)!,
+                Color.lerp(AppColors.bg2, AppColors.bg1, _bgT.value)!,
+                AppColors.bg1,
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _hazeOverlay() {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ambientCtrl,
+        builder: (context, _) {
+          final t = _floatT.value;
+          return Opacity(
+            opacity: 0.08,
+            child: Transform.translate(
+              offset: Offset(lerpDouble(-14, 14, t)!, lerpDouble(10, -10, t)!),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.15, -0.60),
+                    radius: 1.25,
+                    colors: [
+                      AppColors.secondary.withOpacity(0.20),
+                      AppColors.other.withOpacity(0.14),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _glowBlobs(double topInset) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ambientCtrl,
+        builder: (context, _) {
+          final t = _floatT.value;
+          return Stack(
+            children: [
+              _GlowBlob(
+                dx: lerpDouble(-45, 18, t)!,
+                dy: lerpDouble(78, 56, t)! + topInset,
+                size: 250,
+                opacity: 0.14,
+                a: AppColors.secondary,
+                b: AppColors.other,
+              ),
+              _GlowBlob(
+                dx: lerpDouble(220, 310, t)!,
+                dy: lerpDouble(240, 205, t)! + topInset,
+                size: 300,
+                opacity: 0.12,
+                a: AppColors.primary,
+                b: AppColors.secondary,
+              ),
+              _GlowBlob(
+                dx: lerpDouble(140, 210, 1 - t)!,
+                dy: lerpDouble(36, 18, t)! + topInset,
+                size: 220,
+                opacity: 0.10,
+                a: AppColors.other,
+                b: AppColors.secondary,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -273,13 +288,13 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
               child: _PressGlowScale(
                 onTap: () => Navigator.pop(context),
                 borderRadius: BorderRadius.circular(14),
-                child: const _GlassIconSquare(icon: Icons.arrow_back_rounded),
+                child: _GlassIconSquare(icon: Icons.arrow_back_rounded),
               ),
             ),
-
-            // ✅ Center title (3D)
-            _Title3DCentered(text: widget.category.toUpperCase(), fontSize: 20),
-
+            _Title3DCentered(
+              text: widget.category.toUpperCase(),
+              fontSize: 18,
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: Row(
@@ -288,13 +303,15 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
                   _PressGlowScale(
                     onTap: () => setState(() => _showSearch = !_showSearch),
                     borderRadius: BorderRadius.circular(14),
-                    child: _GlassIconSquare(icon: _showSearch ? Icons.close_rounded : Icons.search_rounded),
+                    child: _GlassIconSquare(
+                      icon: _showSearch ? Icons.close_rounded : Icons.search_rounded,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   _PressGlowScale(
                     onTap: () => _openFilters(context),
                     borderRadius: BorderRadius.circular(14),
-                    child: const _GlassIconSquare(icon: Icons.tune_rounded),
+                    child: _GlassIconSquare(icon: Icons.tune_rounded),
                   ),
                 ],
               ),
@@ -305,7 +322,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
     );
   }
 
-  // ───────────────────── Sort Bar (premium light chips) ─────────────────────
+  // ───────────────────── Sort Bar ─────────────────────
 
   Widget _sortBar() {
     final sorts = [
@@ -330,7 +347,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
               HapticFeedback.selectionClick();
               setState(() => _activeSort = i);
             },
-            borderRadius: BorderRadius.circular(AppRadius.r22),
+            borderRadius: AppRadius.r22,
             downScale: 0.988,
             glowOpacity: 0.10,
             child: _GlassChoiceChip(
@@ -376,10 +393,9 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
     return _PressGlowScale(
       onTap: () {
         HapticFeedback.lightImpact();
-        // ✅ Keep your route logic here.
-        // Navigator.push(context, MaterialPageRoute(builder: (_) => ShopScreen(...)));
+        // ✅ keep your navigation here
       },
-      borderRadius: BorderRadius.circular(AppRadius.r18),
+      borderRadius: AppRadius.r18,
       downScale: 0.992,
       glowOpacity: 0.12,
       child: _PremiumShopCard(
@@ -391,18 +407,14 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
   }
 
   Color _accentForIndex(int i) {
-    const accents = [
-      Color(0xFF6B7CFF), // indigo
-      Color(0xFFFF6BD6), // pink
-      Color(0xFF7EDCFF), // sky
-      Color(0xFFCEB8FF), // lavender
-      Color(0xFF10B981), // green
-      Color(0xFFF59E0B), // amber
+    // Keep accents inside your brand family
+    final accents = <Color>[
+      AppColors.primary,
+      AppColors.secondary,
+      AppColors.other,
     ];
     return accents[i % accents.length];
   }
-
-  // ───────────────────── Filters ─────────────────────
 
   void _openFilters(BuildContext context) {
     showModalBottomSheet(
@@ -415,7 +427,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> with TickerProvid
 }
 
 // ============================================================================
-// ✅ Premium Shop Card
+// Premium Shop Card
 // ============================================================================
 
 class _PremiumShopCard extends StatelessWidget {
@@ -436,40 +448,33 @@ class _PremiumShopCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.r18),
+        borderRadius: AppRadius.r18,
         child: Stack(
           children: [
-            // blur base
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: const SizedBox.expand(),
               ),
             ),
-
-            // card surface
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.r18),
-                color: Colors.white.withOpacity(0.58),
-                border: Border.all(color: Colors.white.withOpacity(0.70), width: 1.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.07),
-                    blurRadius: 20,
-                    offset: const Offset(0, 14),
-                  ),
-                ],
+                borderRadius: AppRadius.r18,
+                color: Colors.white.withOpacity(0.60),
+                border: Border.all(
+                  color: AppColors.borderBase(0.85),
+                  width: 1.1,
+                ),
+                boxShadow: AppShadows.soft,
               ),
               child: Stack(
                 children: [
-                  // specular highlight
                   Positioned.fill(
                     child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppRadius.r18),
+                          borderRadius: AppRadius.r18,
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -484,8 +489,6 @@ class _PremiumShopCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // accent blob inside card
                   Positioned(
                     right: -40,
                     top: -50,
@@ -495,30 +498,30 @@ class _PremiumShopCard extends StatelessWidget {
                         height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: accent.withOpacity(0.12),
+                          color: accent.withOpacity(0.10),
                         ),
                       ),
                     ),
                   ),
-
                   Row(
                     children: [
                       _ShopIconTile(accent: accent),
                       const SizedBox(width: 14),
-
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // title
-                            _Title3DInline(
-                              text: data.name,
-                              fontSize: 14.6,
-                              fontWeight: FontWeight.w900,
+                            Text(
+                              data.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.body().copyWith(
+                                fontSize: 14.6,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.ink,
+                              ),
                             ),
                             const SizedBox(height: 7),
-
-                            // meta pills
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -526,12 +529,12 @@ class _PremiumShopCard extends StatelessWidget {
                                 _MetaPill(
                                   icon: Icons.location_on_rounded,
                                   text: data.distance,
-                                  tint: const Color(0xFF1E2235),
+                                  tint: AppColors.ink,
                                 ),
                                 _MetaPill(
                                   icon: Icons.access_time_rounded,
                                   text: data.eta,
-                                  tint: const Color(0xFF1E2235),
+                                  tint: AppColors.ink,
                                 ),
                                 _MetaPill(
                                   icon: Icons.star_rounded,
@@ -542,23 +545,24 @@ class _PremiumShopCard extends StatelessWidget {
                                 _MetaPill(
                                   icon: Icons.check_circle_rounded,
                                   text: data.openNow ? "Open now" : "Closed",
-                                  tint: data.openNow ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                  tint: data.openNow
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
                                   fill: data.openNow
                                       ? const Color(0xFFECFDF5)
                                       : const Color(0xFFFEE2E2),
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: 10),
-
-                            // subtle CTA row
                             Row(
                               children: [
                                 _SoftCTA(accent: accent, text: "View shop"),
                                 const Spacer(),
-                                Icon(Icons.chevron_right_rounded,
-                                    color: const Color(0xFF1E2235).withOpacity(0.55)),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AppColors.ink.withOpacity(0.55),
+                                ),
                               ],
                             ),
                           ],
@@ -596,8 +600,8 @@ class _ShopIconTile extends StatelessWidget {
             height: 66,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: Colors.white.withOpacity(0.58),
-              border: Border.all(color: Colors.white.withOpacity(0.78), width: 1.0),
+              color: Colors.white.withOpacity(0.60),
+              border: Border.all(color: AppColors.borderBase(0.85)),
             ),
             child: Stack(
               children: [
@@ -677,7 +681,7 @@ class _MetaPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: (fill ?? Colors.white).withOpacity(fill == null ? 0.46 : 0.85),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.75), width: 1.0),
+            border: Border.all(color: AppColors.borderBase(0.85)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -718,12 +722,12 @@ class _SoftCTA extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFFF3ECFF).withOpacity(0.92),
-                const Color(0xFFEAF3FF).withOpacity(0.90),
+                AppColors.bg2.withOpacity(0.92),
+                Colors.white.withOpacity(0.86),
               ],
             ),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.1),
+            border: Border.all(color: AppColors.borderBase(0.85)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -732,10 +736,10 @@ class _SoftCTA extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF2D1B69),
+                  color: AppColors.ink.withOpacity(0.92),
                 ),
               ),
             ],
@@ -747,7 +751,7 @@ class _SoftCTA extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ Glass Sort Chip
+// Glass Sort Chip (brand-aligned)
 // ============================================================================
 
 class _GlassChoiceChip extends StatelessWidget {
@@ -763,48 +767,49 @@ class _GlassChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = active ? const Color(0xFF2D1B69) : const Color(0xFF1E2235);
-    final bgA = active ? const Color(0xFFEDE2FF) : const Color(0xFFF8FAFC);
-    final bgB = active ? const Color(0xFFEAF3FF) : const Color(0xFFF8FAFC);
+    final fg = active ? Colors.white : AppColors.ink;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: AppRadius.r22,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
-            gradient: LinearGradient(
+            borderRadius: AppRadius.r22,
+            gradient: active
+                ? AppColors.brandLinear
+                : LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                bgA.withOpacity(active ? 0.92 : 0.62),
-                bgB.withOpacity(active ? 0.90 : 0.54),
+                Colors.white.withOpacity(0.66),
+                Colors.white.withOpacity(0.46),
               ],
             ),
             border: Border.all(
-              color: active ? const Color(0xFF9EC9FF).withOpacity(0.65) : Colors.white.withOpacity(0.72),
+              color: active ? Colors.white.withOpacity(0.22) : AppColors.borderBase(0.85),
               width: 1.15,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(active ? 0.10 : 0.06),
-                blurRadius: active ? 16 : 12,
+                color: Colors.black.withOpacity(active ? 0.12 : 0.06),
+                blurRadius: active ? 18 : 12,
                 offset: const Offset(0, 10),
               ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.75),
-                blurRadius: 14,
-                offset: const Offset(-8, -8),
-                spreadRadius: -10,
-              ),
+              if (!active)
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.75),
+                  blurRadius: 14,
+                  offset: const Offset(-8, -8),
+                  spreadRadius: -10,
+                ),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: fg.withOpacity(0.85)),
+              Icon(icon, size: 16, color: fg.withOpacity(0.90)),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -824,7 +829,7 @@ class _GlassChoiceChip extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ Filters Sheet (updated: light premium; no hover)
+// Filters Sheet (brand-aligned)
 // ============================================================================
 
 class _FiltersSheetGlass extends StatefulWidget {
@@ -855,9 +860,10 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.60),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                border: Border.all(color: Colors.white.withOpacity(0.70), width: 1.1),
+                color: Colors.white.withOpacity(0.62),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(color: AppColors.borderBase(0.85), width: 1.1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.10),
@@ -872,47 +878,41 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
                 children: [
                   _handle(),
                   const SizedBox(height: 14),
-
-                  const _Title3DInline(
-                    text: "Filters",
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                  Text(
+                    "Filters",
+                    style: AppText.h2().copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                    ),
                   ),
-
                   _section("Distance"),
                   _segmented(
                     items: const ["< 2 km", "2–5 km", "5+ km"],
                     active: dist,
                     onChange: (v) => setState(() => dist = v),
                   ),
-
                   _section("Rating"),
                   _segmented(
                     items: const ["4★+", "3★+", "All"],
                     active: rate,
                     onChange: (v) => setState(() => rate = v),
                   ),
-
                   _section("Price range"),
                   _segmented(
                     items: const ["₨", "₨₨", "₨₨₨"],
                     active: price,
                     onChange: (v) => setState(() => price = v),
                   ),
-
                   const SizedBox(height: 14),
                   _toggleRow(),
-
                   const SizedBox(height: 16),
-
                   _PressGlowScale(
                     onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(AppRadius.r22),
+                    borderRadius: AppRadius.r22,
                     downScale: 0.988,
                     glowOpacity: 0.14,
-                    child: _PrimaryGlassButtonLight(
-                      text: "Apply filters",
-                    ),
+                    child: _PrimaryGlassButtonBrand(text: "Apply filters"),
                   ),
                 ],
               ),
@@ -929,7 +929,7 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
         width: 44,
         height: 4,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E2235).withOpacity(0.12),
+          color: AppColors.ink.withOpacity(0.10),
           borderRadius: BorderRadius.circular(999),
         ),
       ),
@@ -941,10 +941,10 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
       padding: const EdgeInsets.only(top: 16, bottom: 10),
       child: Text(
         title,
-        style: TextStyle(
+        style: AppText.kicker().copyWith(
           fontSize: 13,
           fontWeight: FontWeight.w900,
-          color: const Color(0xFF7A7E92).withOpacity(0.95),
+          color: AppColors.ink.withOpacity(0.55),
         ),
       ),
     );
@@ -974,16 +974,24 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
-                  color: isActive
-                      ? const Color(0xFFEDE2FF).withOpacity(0.92)
-                      : Colors.white.withOpacity(0.52),
+                  gradient: isActive
+                      ? AppColors.brandLinear
+                      : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.60),
+                      Colors.white.withOpacity(0.44),
+                    ],
+                  ),
                   border: Border.all(
                     color: isActive
-                        ? const Color(0xFF9EC9FF).withOpacity(0.65)
-                        : Colors.white.withOpacity(0.72),
+                        ? Colors.white.withOpacity(0.22)
+                        : AppColors.borderBase(0.85),
                     width: 1.05,
                   ),
                 ),
@@ -992,7 +1000,7 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: const Color(0xFF1E2235).withOpacity(isActive ? 0.92 : 0.82),
+                    color: isActive ? Colors.white : AppColors.ink,
                   ),
                 ),
               ),
@@ -1011,12 +1019,12 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
           onChanged: (v) => setState(() => openNow = v),
         ),
         const SizedBox(width: 8),
-        const Text(
+        Text(
           "Open now",
-          style: TextStyle(
+          style: AppText.body().copyWith(
             fontSize: 14,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF1E2235),
+            color: AppColors.ink,
           ),
         ),
       ],
@@ -1024,33 +1032,26 @@ class _FiltersSheetGlassState extends State<_FiltersSheetGlass> {
   }
 }
 
-class _PrimaryGlassButtonLight extends StatelessWidget {
+class _PrimaryGlassButtonBrand extends StatelessWidget {
   final String text;
-  const _PrimaryGlassButtonLight({required this.text});
+  const _PrimaryGlassButtonBrand({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: AppRadius.r22,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           height: 52,
           width: double.infinity,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFFF3ECFF).withOpacity(0.95),
-                const Color(0xFFEAF3FF).withOpacity(0.92),
-              ],
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.2),
+            borderRadius: AppRadius.r22,
+            gradient: AppColors.brandLinear,
+            border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withOpacity(0.14),
                 blurRadius: 18,
                 offset: const Offset(0, 14),
               ),
@@ -1061,7 +1062,7 @@ class _PrimaryGlassButtonLight extends StatelessWidget {
             text,
             style: const TextStyle(
               fontWeight: FontWeight.w900,
-              color: Color(0xFF2D1B69),
+              color: Colors.white,
               fontSize: 14.5,
               letterSpacing: 0.2,
             ),
@@ -1073,7 +1074,7 @@ class _PrimaryGlassButtonLight extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ Search Field (Premium Glass)
+// Search Field
 // ============================================================================
 
 class _SearchGlassField extends StatelessWidget {
@@ -1092,7 +1093,7 @@ class _SearchGlassField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.r22),
+      borderRadius: AppRadius.r22,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
@@ -1100,34 +1101,29 @@ class _SearchGlassField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.62),
-            borderRadius: BorderRadius.circular(AppRadius.r22),
-            border: Border.all(color: Colors.white.withOpacity(0.74), width: 1.1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.07),
-                blurRadius: 18,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            borderRadius: AppRadius.r22,
+            border: Border.all(color: AppColors.borderBase(0.85), width: 1.1),
+            boxShadow: AppShadows.soft,
           ),
           child: Row(
             children: [
-              Icon(Icons.search_rounded, color: const Color(0xFF1E2235).withOpacity(0.60)),
+              Icon(Icons.search_rounded,
+                  color: AppColors.ink.withOpacity(0.55)),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: controller,
                   onChanged: onChanged,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E2235),
+                    color: AppColors.ink.withOpacity(0.92),
                     fontSize: 13.5,
                   ),
                   decoration: InputDecoration(
                     hintText: hint,
                     hintStyle: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF7A7E92).withOpacity(0.85),
+                      color: AppColors.ink.withOpacity(0.40),
                       fontSize: 13,
                     ),
                     border: InputBorder.none,
@@ -1150,9 +1146,10 @@ class _SearchGlassField extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.white.withOpacity(0.72),
-                      border: Border.all(color: Colors.white.withOpacity(0.78)),
+                      border: Border.all(color: AppColors.borderBase(0.85)),
                     ),
-                    child: Icon(Icons.close_rounded, color: const Color(0xFF1E2235).withOpacity(0.65)),
+                    child: Icon(Icons.close_rounded,
+                        color: AppColors.ink.withOpacity(0.55)),
                   ),
                 ),
             ],
@@ -1164,7 +1161,7 @@ class _SearchGlassField extends StatelessWidget {
 }
 
 // ============================================================================
-// ✅ Small reusable helpers (NO hover, press only)
+// Small reusable helpers (press only)
 // ============================================================================
 
 class _PressGlowScale extends StatefulWidget {
@@ -1214,7 +1211,7 @@ class _PressGlowScaleState extends State<_PressGlowScale> {
           boxShadow: _down
               ? [
             BoxShadow(
-              color: const Color(0xFF6B7CFF).withOpacity(widget.glowOpacity),
+              color: AppColors.secondary.withOpacity(widget.glowOpacity),
               blurRadius: 28,
               offset: const Offset(0, 16),
             ),
@@ -1254,13 +1251,7 @@ class _GlassHeaderShell extends StatelessWidget {
             color: Colors.white.withOpacity(0.66),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white.withOpacity(0.60), width: 1.1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppShadows.soft,
           ),
           child: Stack(
             children: [
@@ -1304,32 +1295,25 @@ class _GlassIconSquare extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.74),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider.withOpacity(0.70)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.85),
-            blurRadius: 12,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderBase(0.85)),
+        boxShadow: AppShadows.soft,
       ),
-      child: Icon(icon, color: AppColors.textDark),
+      child: Icon(icon, color: AppColors.ink),
     );
   }
 }
 
 class _GlowBlob extends StatelessWidget {
   final double dx, dy, size, opacity;
+  final Color a, b;
+
   const _GlowBlob({
     required this.dx,
     required this.dy,
     required this.size,
     required this.opacity,
+    required this.a,
+    required this.b,
   });
 
   @override
@@ -1345,8 +1329,8 @@ class _GlowBlob extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF6B7CFF).withOpacity(opacity),
-                const Color(0xFF7EDCFF).withOpacity(opacity * 0.72),
+                a.withOpacity(opacity),
+                b.withOpacity(opacity * 0.70),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.55, 1.0],
@@ -1364,7 +1348,7 @@ class _Title3DCentered extends StatelessWidget {
 
   const _Title3DCentered({
     required this.text,
-    this.fontSize = 20,
+    this.fontSize = 18,
   });
 
   @override
@@ -1385,25 +1369,32 @@ class _Title3DCentered extends StatelessWidget {
               ),
             ),
           ),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-            color: const Color(0xFF1E2235),
-            shadows: [
-              Shadow(
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
-              ),
-              Shadow(
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
+        ShaderMask(
+          shaderCallback: (rect) => LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primary, AppColors.secondary, AppColors.primary],
+          ).createShader(rect),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.6,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                  color: AppColors.secondary.withOpacity(0.14),
+                ),
+                Shadow(
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.10),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1411,88 +1402,8 @@ class _Title3DCentered extends StatelessWidget {
   }
 }
 
-class _Title3DInline extends StatelessWidget {
-  final String text;
-  final double fontSize;
-  final FontWeight fontWeight;
-
-  const _Title3DInline({
-    required this.text,
-    required this.fontSize,
-    required this.fontWeight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const base = Color(0xFF1B1E2B);
-
-    // same 3D letter trick but inline widget
-    return RichText(
-      text: TextSpan(
-        children: text.split('').map((ch) {
-          if (ch == ' ') return const TextSpan(text: ' ');
-
-          return WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
-            child: Stack(
-              children: [
-                Transform.translate(
-                  offset: const Offset(0.9, 1.1),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: base.withOpacity(0.18),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(0.0, 0.8),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: base.withOpacity(0.10),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(-0.5, -0.6),
-                  child: Text(
-                    ch,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      color: Colors.white.withOpacity(0.55),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-                Text(
-                  ch,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: fontWeight,
-                    color: base,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
 // ============================================================================
-// Top cap clipper (same shape system-wide)
+// Top cap clipper
 // ============================================================================
 
 class _HeaderCapClipper extends CustomClipper<Path> {
@@ -1520,7 +1431,7 @@ class _HeaderCapClipper extends CustomClipper<Path> {
 }
 
 // ============================================================================
-// Small models
+// Models
 // ============================================================================
 
 class _SortItem {

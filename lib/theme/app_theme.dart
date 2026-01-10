@@ -1,75 +1,39 @@
+// theme/app_theme.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
-import 'app_radius.dart';
 
 class AppTheme {
   static ThemeData light() {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.bg,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.textDark,
-        brightness: Brightness.light,
-        surface: AppColors.surface,
-      ),
-    );
+    final base = ThemeData.light(useMaterial3: true);
 
     return base.copyWith(
-      dividerColor: AppColors.divider,
-
+      scaffoldBackgroundColor: AppColors.bg1,
+      colorScheme: base.colorScheme.copyWith(
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+        surface: Colors.white,
+        background: AppColors.bg1,
+        onBackground: AppColors.ink,
+        onSurface: AppColors.ink,
+      ),
+      textTheme: GoogleFonts.manropeTextTheme(base.textTheme).apply(
+        bodyColor: AppColors.ink,
+        displayColor: AppColors.ink,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
-
-      cardTheme: CardThemeData(
-        color: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          side: const BorderSide(color: AppColors.divider),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.ink.withOpacity(0.92),
+        contentTextStyle: GoogleFonts.manrope(
+          fontWeight: FontWeight.w800,
+          color: Colors.white.withOpacity(0.92),
         ),
-      ),
-
-      iconTheme: const IconThemeData(color: AppColors.textDark),
-
-      textTheme: base.textTheme.apply(
-        bodyColor: AppColors.textDark,
-        displayColor: AppColors.textDark,
-      ),
-
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.r18),
-          borderSide: const BorderSide(color: AppColors.textDark, width: 1.2),
-        ),
-      ),
-
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textDark,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.r22),
-            side: const BorderSide(color: AppColors.divider),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

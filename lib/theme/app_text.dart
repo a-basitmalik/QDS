@@ -1,52 +1,58 @@
+// theme/app_text.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppText {
-  // Your Feed title
-  static const displaySerif = TextStyle(
-    fontSize: 34,
+  static TextStyle h1() => GoogleFonts.manrope(
+    fontSize: 26,
+    fontWeight: FontWeight.w900,
     height: 1.05,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Georgia', // optional
-    color: AppColors.textDark,
+    color: AppColors.ink,
+    letterSpacing: -0.6,
   );
 
-  static const h18 = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textDark,
+  static TextStyle h2() => GoogleFonts.manrope(
+    fontSize: 20,
+    fontWeight: FontWeight.w900,
+    height: 1.10,
+    color: AppColors.ink,
+    letterSpacing: -0.4,
   );
 
-  static const body14Soft = TextStyle(
-    fontSize: 14,
-    height: 1.35,
-    color: AppColors.textSoft,
-    fontWeight: FontWeight.w500,
+  static TextStyle h3() => GoogleFonts.manrope(
+    fontSize: 16.5,
+    fontWeight: FontWeight.w900,
+    height: 1.12,
+    color: AppColors.ink,
+    letterSpacing: -0.25,
   );
 
-  static const label13Mid = TextStyle(
-    fontSize: 13,
-    color: AppColors.textMid,
-    fontWeight: FontWeight.w500,
-  );
-
-  static const label13Soft = TextStyle(
-    fontSize: 13,
-    color: Color(0xFF9A9AA0),
-    fontWeight: FontWeight.w500,
-  );
-
-  static const button15Bold = TextStyle(
-    fontSize: 15,
+  static TextStyle body() => GoogleFonts.manrope(
+    fontSize: 13.2,
     fontWeight: FontWeight.w700,
-    color: AppColors.textDark,
+    height: 1.25,
+    color: AppColors.ink.withOpacity(0.86),
   );
 
-  static const chromeDay = TextStyle(
-    fontSize: 44,
+  static TextStyle subtle() => GoogleFonts.manrope(
+    fontSize: 12.6,
+    fontWeight: FontWeight.w700,
+    height: 1.22,
+    color: AppColors.ink.withOpacity(0.55),
+  );
+
+  static TextStyle kicker() => GoogleFonts.manrope(
+    fontSize: 12.2,
+    fontWeight: FontWeight.w800,
+    height: 1.10,
+    color: AppColors.ink.withOpacity(0.55),
+  );
+
+  static TextStyle button() => GoogleFonts.manrope(
+    fontSize: 12.4,
+    fontWeight: FontWeight.w900,
     height: 1.0,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textDark,
-    letterSpacing: -1.0,
+    color: AppColors.ink.withOpacity(0.88),
   );
 }
