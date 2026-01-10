@@ -1,12 +1,3 @@
-// ✅ COMPLETE updated Checkout screen — MATCHES your FINAL Theme (AppColors/AppRadius/AppShadows/AppText)
-// FIXED (so it compiles with your theme files):
-// - ❌ Removed AppColors.bg / textDark / textMid / divider (not in your theme)
-// - ❌ Removed AppShadows.topCap (not in your theme)
-// - ✅ Uses AppColors.bg1/bg2/bg3, ink, muted, borderBase(), brandLinear, primary/secondary/other
-// - ✅ Uses AppRadius + AppShadows.soft everywhere
-// - ✅ Keeps: layout, sticky header, step tracking, scroll, dialogs, animations, bottom CTA, success sheet
-// NOTE: Self-contained helpers included (PressGlowScale etc.)
-
 import 'dart:math';
 import 'dart:ui';
 
@@ -41,12 +32,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
   late final AnimationController _btnCtrl;
   late final Animation<double> _btnT;
 
-  // Scroll + step tracking
   final ScrollController _scrollCtrl = ScrollController();
-  final _kAddress = GlobalKey();
-  final _kPayment = GlobalKey();
-  final _kConfirm = GlobalKey();
-  int _activeStep = 0; // 0=Address, 1=Payment, 2=Confirm
 
   final phoneCtrl = TextEditingController(text: "03XX-XXXXXXX");
   final addressCtrl =
@@ -59,9 +45,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     {"name": "Leather Wallet", "price": 2999, "qty": 1},
   ];
 
-  static const double _capBaseH = 140.0;
+  static const double _capBaseH = 78.0; // ✅ smaller top cap
   static const double _stickyHeaderH = 64.0;
-  static const double _stickyStepsH = 52.0;
 
   @override
   void initState() {
@@ -89,14 +74,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     _btnT = CurvedAnimation(parent: _btnCtrl, curve: Curves.easeOut);
 
     _enterCtrl.forward();
-
-    _scrollCtrl.addListener(_handleScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
   }
 
   @override
   void dispose() {
-    _scrollCtrl.removeListener(_handleScroll);
     _scrollCtrl.dispose();
 
     phoneCtrl.dispose();
@@ -115,66 +96,12 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
   int get deliveryFee => 199;
   int get total => subtotal + deliveryFee;
 
-  // ───────────────────────── Step tracking ─────────────────────────
-
-  void _handleScroll() {
-    final idx = _closestSectionIndex();
-    if (idx != null && idx != _activeStep) {
-      setState(() => _activeStep = idx);
-    }
-  }
-
-  int? _closestSectionIndex() {
-    final topInset = MediaQuery.of(context).padding.top;
-
-    // "reading line" below header + steps row
-    final readingY = topInset + 6 + _stickyHeaderH + 10 + _stickyStepsH + 14;
-
-    final a = _distToKey(_kAddress, readingY);
-    final p = _distToKey(_kPayment, readingY);
-    final c = _distToKey(_kConfirm, readingY);
-
-    final entries = <int, double?>{0: a, 1: p, 2: c}
-        .entries
-        .where((e) => e.value != null)
-        .map((e) => MapEntry(e.key, e.value!))
-        .toList();
-
-    if (entries.isEmpty) return null;
-    entries.sort((x, y) => x.value.compareTo(y.value));
-    return entries.first.key;
-  }
-
-  double? _distToKey(GlobalKey key, double readingY) {
-    final ctx = key.currentContext;
-    if (ctx == null) return null;
-    final ro = ctx.findRenderObject();
-    if (ro is! RenderBox) return null;
-    final dy = ro.localToGlobal(Offset.zero).dy;
-    return (dy - readingY).abs();
-  }
-
-  void _scrollToKey(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx == null) return;
-
-    Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeOutCubic,
-      alignment: 0.06,
-    );
-  }
-
-  // ───────────────────────── BUILD ─────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
 
-    // Prevent collision with sticky header + step row
-    final contentTopPadding =
-        _capBaseH + topInset + _stickyHeaderH + 10 + _stickyStepsH + 16;
+    // ✅ Remove extra gap: only cap + header + small spacing
+    final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 10;
 
     return Scaffold(
       backgroundColor: AppColors.bg3,
@@ -272,10 +199,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             ),
           ),
 
-          // ✅ Top cap (unchanged shape, theme shadows)
-          const _CheckoutTopCap(),
+          // ✅ Top cap (NO slant)
+          const _CheckoutTopCapFlat(),
 
-          // ✅ Content
+          // ✅ Content (no Address/Payment/Confirm buttons, no keys)
           FadeTransition(
             opacity: _fade,
             child: SlideTransition(
@@ -287,18 +214,13 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ADDRESS
-                    Container(
-                      key: _kAddress,
-                      child: _sectionCard(
-                        title: "Address Details",
-                        icon: Icons.location_on_outlined,
-                        child: _addressBlock(),
-                      ),
+                    _sectionCard(
+                      title: "Address Details",
+                      icon: Icons.location_on_outlined,
+                      child: _addressBlock(),
                     ),
                     const SizedBox(height: 16),
 
-                    // PHONE
                     _sectionCard(
                       title: "Phone Number",
                       icon: Icons.phone_rounded,
@@ -306,29 +228,20 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                     ),
                     const SizedBox(height: 16),
 
-                    // PAYMENT
-                    Container(
-                      key: _kPayment,
-                      child: _sectionCard(
-                        title: "Payment",
-                        icon: Icons.payments_outlined,
-                        child: _paymentBlock(),
-                      ),
+                    _sectionCard(
+                      title: "Payment",
+                      icon: Icons.payments_outlined,
+                      child: _paymentBlock(),
                     ),
                     const SizedBox(height: 16),
 
-                    // CONFIRM
-                    Container(
-                      key: _kConfirm,
-                      child: _sectionCard(
-                        title: "Confirm",
-                        icon: Icons.verified_rounded,
-                        child: _confirmBlock(),
-                      ),
+                    _sectionCard(
+                      title: "Confirm",
+                      icon: Icons.verified_rounded,
+                      child: _confirmBlock(),
                     ),
                     const SizedBox(height: 16),
 
-                    // ORDER SUMMARY
                     _sectionCard(
                       title: "Order Summary",
                       icon: Icons.receipt_long_rounded,
@@ -340,9 +253,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             ),
           ),
 
-          // ✅ Sticky header + step row
+          // ✅ Sticky header only (no step buttons row)
           _stickyCenteredHeader(context),
-          _stickyStepCards(context),
 
           // ✅ Bottom CTA
           _bottomCTA(context),
@@ -364,7 +276,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
         downScale: 0.992,
         glowColor: AppColors.secondary.withOpacity(0.10),
         borderRadius: BorderRadius.circular(18),
-        onTap: () {}, // decorative press
+        onTap: () {},
         child: ClipRRect(
           borderRadius: BorderRadius.circular(18),
           child: BackdropFilter(
@@ -422,45 +334,6 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ───────────────────────── Sticky Step Cards ─────────────────────────
-
-  Widget _stickyStepCards(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
-
-    return Positioned(
-      top: topInset + 6 + _stickyHeaderH + 10,
-      left: 12,
-      right: 12,
-      child: Row(
-        children: [
-          Expanded(
-            child: _StepCard(
-              text: "Address",
-              active: _activeStep == 0,
-              onTap: () => _scrollToKey(_kAddress),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _StepCard(
-              text: "Payment",
-              active: _activeStep == 1,
-              onTap: () => _scrollToKey(_kPayment),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _StepCard(
-              text: "Confirm",
-              active: _activeStep == 2,
-              onTap: () => _scrollToKey(_kConfirm),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -662,7 +535,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
             if (!enabled) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.92),
                   borderRadius: AppRadius.pill(),
@@ -683,7 +557,6 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       ),
     );
   }
-
 
   Widget _iconChipLight(
       IconData icon, {
@@ -827,8 +700,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     return _PressGlowScale(
       downScale: 0.992,
       glowColor: AppColors.secondary.withOpacity(0.10),
-      borderRadius: AppRadius.r18, // ✅ fixed
-      onTap: () {}, // decorative press
+      borderRadius: AppRadius.r18,
+      onTap: () {},
       child: _LightWhitishCard(
         floatingT: _floatT.value,
         padding: const EdgeInsets.all(16),
@@ -840,7 +713,7 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
                 _PressGlowScale(
                   downScale: 0.95,
                   glowColor: AppColors.other.withOpacity(0.10),
-                  borderRadius: AppRadius.r12, // ✅ fixed (matches your AppRadius)
+                  borderRadius: AppRadius.r12,
                   onTap: () {},
                   child: _IconBadgeLight(icon: icon),
                 ),
@@ -862,7 +735,6 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
       ),
     );
   }
-
 
   // ───────────────────────── Bottom CTA ─────────────────────────
 
@@ -1058,10 +930,10 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
   }
 }
 
-// ───────────────────── TOP CAP ─────────────────────
+// ───────────────────── TOP CAP (NO SLANT) ─────────────────────
 
-class _CheckoutTopCap extends StatelessWidget {
-  const _CheckoutTopCap();
+class _CheckoutTopCapFlat extends StatelessWidget {
+  const _CheckoutTopCapFlat();
 
   @override
   Widget build(BuildContext context) {
@@ -1071,42 +943,18 @@ class _CheckoutTopCap extends StatelessWidget {
       top: -topInset,
       left: 0,
       right: 0,
-      child: ClipPath(
-        clipper: _CheckoutHeaderClipper(),
-        child: Container(
-          height: _CartCheckoutScreenState._capBaseH + topInset,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: AppShadows.soft,
+      child: Container(
+        height: _CartCheckoutScreenState._capBaseH + topInset,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: AppShadows.soft,
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(26),
           ),
         ),
       ),
     );
   }
-}
-
-class _CheckoutHeaderClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final r = 22.0;
-    final slant = 36.0;
-    final cutY = size.height - 52;
-
-    return Path()
-      ..moveTo(r, 0)
-      ..lineTo(size.width - r, 0)
-      ..quadraticBezierTo(size.width, 0, size.width, r)
-      ..lineTo(size.width, cutY)
-      ..lineTo(size.width - slant, size.height)
-      ..lineTo(slant, size.height)
-      ..lineTo(0, cutY)
-      ..lineTo(0, r)
-      ..quadraticBezierTo(0, 0, r, 0)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
 // ───────────────────── BACKGROUND BLOBS ─────────────────────
@@ -1289,52 +1137,6 @@ class _Title3DHolo extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ───────────────────── STEP CARD ─────────────────────
-
-class _StepCard extends StatelessWidget {
-  final String text;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _StepCard({
-    required this.text,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _PressGlowScale(
-      downScale: 0.97,
-      glowColor: active
-          ? AppColors.secondary.withOpacity(0.10)
-          : Colors.black.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: Colors.white.withOpacity(active ? 0.95 : 0.88),
-          border: Border.all(
-            color: active ? AppColors.borderBase(0.85) : AppColors.borderBase(0.70),
-          ),
-          boxShadow: AppShadows.soft,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            color: active ? AppColors.ink.withOpacity(0.95) : AppColors.muted.withOpacity(0.90),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1585,7 +1387,7 @@ class _PressGlowScaleState extends State<_PressGlowScale> {
   }
 }
 
-// ───────────────────── SUCCESS BIG GLASS SHEET (kept) ─────────────────────
+// ───────────────────── SUCCESS BIG GLASS SHEET ─────────────────────
 
 class _OrderSuccessBigGlassSheet extends StatefulWidget {
   const _OrderSuccessBigGlassSheet();
@@ -1642,6 +1444,7 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                 child: AnimatedBuilder(
                   animation: _ctrl,
                   builder: (context, _) {
+                    final darkRed = AppColors.primary; // ✅ theme dark red
                     return FadeTransition(
                       opacity: _fade,
                       child: Transform.scale(
@@ -1677,7 +1480,8 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                     scale: lerpDouble(0.60, 1.0, _tickPop.value)!,
                                     child: ClipOval(
                                       child: BackdropFilter(
-                                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                        filter: ImageFilter.blur(
+                                            sigmaX: 12, sigmaY: 12),
                                         child: Container(
                                           width: 118,
                                           height: 118,
@@ -1687,12 +1491,12 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                               begin: Alignment.topLeft,
                                               end: Alignment.bottomRight,
                                               colors: [
-                                                Colors.white.withOpacity(0.78),
-                                                Colors.white.withOpacity(0.58),
+                                                darkRed.withOpacity(0.18),
+                                                Colors.white.withOpacity(0.70),
                                               ],
                                             ),
                                             border: Border.all(
-                                              color: AppColors.borderBase(0.90),
+                                              color: darkRed.withOpacity(0.35),
                                               width: 1.8,
                                             ),
                                             boxShadow: AppShadows.soft,
@@ -1700,7 +1504,7 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                           child: Icon(
                                             Icons.check_rounded,
                                             size: 66,
-                                            color: AppColors.ink.withOpacity(0.75),
+                                            color: darkRed, // ✅ dark red tick
                                           ),
                                         ),
                                       ),
@@ -1728,13 +1532,15 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(999),
                                     child: BackdropFilter(
-                                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                      filter: ImageFilter.blur(
+                                          sigmaX: 8, sigmaY: 8),
                                       child: Container(
                                         height: 12,
                                         width: 240,
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.45),
-                                          borderRadius: BorderRadius.circular(999),
+                                          borderRadius:
+                                          BorderRadius.circular(999),
                                           border: Border.all(
                                             color: AppColors.borderBase(0.80),
                                           ),
@@ -1742,16 +1548,18 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
                                         child: Align(
                                           alignment: Alignment.centerLeft,
                                           child: FractionallySizedBox(
-                                            widthFactor: min(1.0, _ctrl.value * 1.2),
+                                            widthFactor:
+                                            min(1.0, _ctrl.value * 1.2),
                                             child: Container(
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(
                                                   colors: [
-                                                    AppColors.secondary.withOpacity(0.28),
-                                                    AppColors.primary.withOpacity(0.35),
+                                                    darkRed.withOpacity(0.22),
+                                                    darkRed.withOpacity(0.34),
                                                   ],
                                                 ),
-                                                borderRadius: BorderRadius.circular(999),
+                                                borderRadius:
+                                                BorderRadius.circular(999),
                                               ),
                                             ),
                                           ),

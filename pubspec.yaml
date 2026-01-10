@@ -62,6 +62,11 @@ flutter:
     - assets/articles/Edited.jpg
     - assets/shops/Edited.jpg
     - assets/logos/Edited.jpg
+    - assets/shops/Charcoal.png
+    - assets/shops/Monark.jpg
+    - assets/shops/Outfitters.png
+    - assets/shops/Uniworth.png
+    - assets/articles/hats.jpeg
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

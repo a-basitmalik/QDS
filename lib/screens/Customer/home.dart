@@ -1,11 +1,11 @@
 // home.dart
 import 'dart:math';
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:qds/screens/Customer/shop_screen.dart';
 
 // ✅ Add this dependency in pubspec.yaml if not already:
 // google_maps_flutter: ^2.6.1
@@ -14,19 +14,19 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:qds/screens/Customer/profile_screen.dart';
 import 'package:qds/screens/Customer/shop_listing_screen.dart';
 import 'package:qds/screens/Customer/shop_screen.dart';
-
+import 'package:qds/screens/Customer/ai_outfit/ai_outfit.dart';
 /// ✅ Updated Home UI (routing/functionality preserved)
 /// ✅ LIGHT THEME + your palette:
 /// primary   #440C08
 /// secondary #750A03
 /// others    (invalid "9BOS03") -> using fallback #9B0F03
 ///
-/// ✅ Update per your screenshot:
-/// - Cards like Foodpanda:
-///   ✅ image fully shown on top
-///   ✅ text/info BELOW the image inside a frosted GLASS container
-///   ✅ heart icon on image (optional)
-///   ✅ small badges (Ad/Offer/PRO) optional
+/// ✅ Added:
+/// - Futuristic animated AI Outfit button (center bottom)
+/// - Brand/category picker popup (can be left empty)
+/// - AI loading animation
+/// - 5 outfits results with Next + Generate 5 new
+/// - "Try this outfit" -> AR-2D try-on screen with product list + Add to cart + View details
 ///
 /// ⚠️ Assets:
 /// flutter:
@@ -35,18 +35,43 @@ import 'package:qds/screens/Customer/shop_screen.dart';
 ///     - assets/articles/
 ///     - assets/shops/
 ///     - assets/logos/
+// ✅ Replace FAB overlay with a FULL AI SECTION (electric border fill + beating heart + smoke)
+// ✅ Keep your existing AI flow (picker → generating dialog → results) intact
+//
+// What you’ll do:
+// 1) Remove AiOutfitFabOverlay(...) from your HomeScreen Stack.
+// 2) Add the AiOutfitSection(...) widget in your scroll body where you want the AI section.
+// 3) Keep your onTap logic exactly the same (moved into _openAiFlow()).
+//
+// NOTE: This code is self-contained and “modular”: you can edit only AiOutfitSection
+// later to improve visuals without touching the rest.
+
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+class ShopCardData {
+  final String name;
+  final String meta;
+  final String image;
+  final bool isAd;
+  final String? offer;
+  final String? pro;
 
-// ─────────────────────────────────────────────────────────────
-// MEDIA MODELS + HELPERS
-// ─────────────────────────────────────────────────────────────
+  const ShopCardData({
+    required this.name,
+    required this.meta,
+    required this.image,
+    this.isAd = false,
+    this.offer,
+    this.pro,
+  });
+}
 class CardMedia {
-  final String bg; // image (asset or network)
+  final String bg;
   const CardMedia({required this.bg});
 }
 
@@ -54,16 +79,8 @@ bool _isNetwork(String s) => s.startsWith('http://') || s.startsWith('https://')
 
 Widget _img(String path, {BoxFit fit = BoxFit.cover}) {
   return _isNetwork(path)
-      ? Image.network(
-    path,
-    fit: fit,
-    errorBuilder: (_, __, ___) => const SizedBox(),
-  )
-      : Image.asset(
-    path,
-    fit: fit,
-    errorBuilder: (_, __, ___) => const SizedBox(),
-  );
+      ? Image.network(path, fit: fit, errorBuilder: (_, __, ___) => const SizedBox())
+      : Image.asset(path, fit: fit, errorBuilder: (_, __, ___) => const SizedBox());
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
@@ -79,37 +96,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     SelectedLocation(label: "Office", latLng: LatLng(24.8607, 67.0011)),
   ];
 
-  // ─────────────────────────────────────────────────────────────
   // ✅ LIGHT THEME + YOUR COLORS
-  // ─────────────────────────────────────────────────────────────
   static const _primary = Color(0xFF440C08);
   static const _secondary = Color(0xFF750A03);
-  static const _other = Color(0xFF9B0F03); // fallback for invalid hex
+  static const _other = Color(0xFF9B0F03);
 
   static const _bg1 = Color(0xFFF9F6F5);
   static const _bg2 = Color(0xFFF4EEED);
   static const _bg3 = Color(0xFFFFFFFF);
-
   static const _ink = Color(0xFF140504);
 
-  TextStyle _subtle() => GoogleFonts.manrope(
-    fontSize: 12.6,
-    fontWeight: FontWeight.w700,
-    height: 1.22,
-    color: _ink.withOpacity(0.55),
-  );
+  TextStyle _subtle() =>
+      GoogleFonts.manrope(
+        fontSize: 12.6,
+        fontWeight: FontWeight.w700,
+        height: 1.22,
+        color: _ink.withOpacity(0.55),
+      );
 
   @override
   void initState() {
     super.initState();
 
     _ambientCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 5600),
-    )..repeat(reverse: true);
+        vsync: this, duration: const Duration(milliseconds: 5600))
+      ..repeat(reverse: true);
 
     _bgT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOut);
-    _floatT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
+    _floatT =
+        CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
 
     _selectedLocation ??= const SelectedLocation(
       label: "Current location",
@@ -123,16 +138,73 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // ✅ Same flow you already had — just moved into a method
+  Future<void> _openAiFlow() async {
+    HapticFeedback.mediumImpact();
+
+    final prefs = await showModalBottomSheet<OutfitGenPrefs>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          AiOutfitPickerSheet(
+            primary: _primary,
+            secondary: _secondary,
+            ink: _ink,
+          ),
+    );
+
+    if (!mounted || prefs == null) return;
+
+    final outfits = await showDialog<List<OutfitBundle>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          AiGeneratingDialog(
+            primary: _primary,
+            secondary: _secondary,
+            other: _other,
+            ink: _ink,
+            prefs: prefs,
+          ),
+    );
+
+    if (!mounted || outfits == null || outfits.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            AiOutfitResultsScreen(
+              primary: _primary,
+              secondary: _secondary,
+              other: _other,
+              ink: _ink,
+              initialOutfits: outfits,
+              prefs: prefs,
+              fullScreenGlassSheet: () => const _FullScreenGlassSheet(),
+              title3d: (text, {fontSize = 20, fontWeight = FontWeight.w900}) =>
+                  _Title3D(text, fontSize: fontSize, fontWeight: fontWeight),
+              imgBuilder: (image, {fit = BoxFit.cover}) =>
+                  _img(image, fit: fit),
+            ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
+    final topInset = MediaQuery
+        .of(context)
+        .padding
+        .top;
 
     return Scaffold(
       backgroundColor: _bg1,
       bottomNavigationBar: _flashDealsBar(context),
       body: Stack(
         children: [
-          // ✅ Background (gradient + glass sheet + blobs + vignette)
+          // Background
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (context, _) {
@@ -141,7 +213,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
               return Stack(
                 children: [
-                  // 1) Base bright gradient
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -156,11 +227,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-
-                  // 2) Frosted “glass sheet” across the whole screen
                   const _FullScreenGlassSheet(),
-
-                  // 3) Controlled glow blobs + shimmer
                   IgnorePointer(
                     child: Stack(
                       children: [
@@ -189,15 +256,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           b: _secondary,
                         ),
                         _ShimmerSweep(
-                          t: tt,
-                          colorA: _secondary,
-                          colorB: _primary,
-                        ),
+                            t: tt, colorA: _secondary, colorB: _primary),
                       ],
                     ),
                   ),
-
-                  // 4) Soft top vignette
                   IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
@@ -219,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
           ),
 
-          // ✅ Top cap layer (over the background)
+          // Top cap
           Positioned(
             top: -topInset,
             left: 0,
@@ -251,7 +313,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ✅ Actual content on top
           SafeArea(child: _body(context)),
         ],
       ),
@@ -259,17 +320,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _body(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
+    final topInset = MediaQuery
+        .of(context)
+        .padding
+        .top;
 
-    // ✅ Example media (replace with your real asset/network paths)
     const promotedMedia = CardMedia(bg: "assets/banners/Edited.jpg");
     const articleMedia = CardMedia(bg: "assets/articles/Edited.jpg");
-
     final nearbyMedia = const [
-      CardMedia(bg: "assets/shops/Edited.jpg"),
-      CardMedia(bg: "assets/shops/Edited.jpg"),
-      CardMedia(bg: "assets/shops/Edited.jpg"),
-      CardMedia(bg: "assets/shops/Edited.jpg"),
+      CardMedia(bg: "assets/shops/Charcoal.png"),
+      CardMedia(bg: "assets/shops/Monark.jpg"),
+      CardMedia(bg: "assets/shops/Outfitters.png"),
+      CardMedia(bg: "assets/shops/Uniworth.png"),
     ];
 
     return AnimatedBuilder(
@@ -288,54 +350,89 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _heroCard(context),
               const SizedBox(height: 18),
               _categoriesRow(context),
-              const SizedBox(height: 22),
 
-              _sectionHeader(
-                "Try something new",
-                "Picked for you",
-                Icons.auto_awesome_rounded,
-              ),
-              const SizedBox(height: 12),
-              _horizontalCards(
-                height: 210, // <-- slightly taller to fit image + footer
-                titleText: "The Whispering Cup",
-                metaText: "20–45 min • \$\$ • Continental",
-                media: promotedMedia,
-                isAd: true,
-                offerText: "10% off",
-                proText: "PRO • Free with Rs.599",
+              // ✅ NEW: Entire AI Section (instead of FAB)
+
+// ✅ NEW: Entire AI Section (instead of FAB)
+              const SizedBox(height: 18),
+              AiOutfitSection(
+                primary: _primary,
+                secondary: _secondary,
+                other: _other,
+                ink: _ink,
+                onActivated: _openAiFlow,
               ),
 
               const SizedBox(height: 22),
 
-              _sectionHeader(
-                "Top picks for you",
-                "Cakes & Bakery",
-                Icons.cake_rounded,
-              ),
+              _sectionHeader("Spotlight Stores", "Featured brands near you",
+                  Icons.auto_awesome_rounded),
               const SizedBox(height: 12),
+
               _horizontalCards(
                 height: 210,
-                titleText: "Shezan Bakers • Township",
-                metaText: "20–45 min • \$\$ • Cakes & Bakery",
-                media: articleMedia,
-                isAd: false,
-                offerText: "10% off",
-                proText: "PRO • Up to 15% off",
-                routeToShop: true,
+                items: const [
+                  ShopCardData(
+                    name: "Charcoal",
+                    meta: "Men • Formalwear • Premium",
+                    image: "assets/shops/Charcoal.png",
+                    isAd: true,
+                    offer: "Flat 15% OFF",
+                    pro: "PRO • Free delivery over Rs.199",
+                  ),
+                  ShopCardData(
+                    name: "Outfitters",
+                    meta: "Men & Women • Casual • Trending",
+                    image: "assets/shops/Outfitters.png",
+                    isAd: true,
+                    offer: "Buy 2 Save 10%",
+                    pro: "PRO • Extra 5% off",
+                  ),
+                  ShopCardData(
+                    name: "Uniworth",
+                    meta: "Men • Smart Casual • Best sellers",
+                    image: "assets/shops/Uniworth.png",
+                    offer: "Winter Collection",
+                    pro: "Free delivery over Rs.2499",
+                  ),
+                  ShopCardData(
+                    name: "Monark",
+                    meta: "Men • Eastern Wear • New arrivals",
+                    image: "assets/shops/Monark.jpg",
+                    offer: "Season Sale",
+                    pro: "Limited time",
+                  ),
+                ],
+              ),
+
+
+              const SizedBox(height: 22),
+
+              _sectionHeader("Trending Now", "Top Articles",
+                  Icons.local_fire_department_rounded),
+              const SizedBox(height: 12),
+
+              _trendingCategoryCards(
+                height: 210,
+                items: const [
+                  ("Shirts", "Overshirts • Linen • New arrivals"),
+                  ("Shoes", "Sneakers • Loafers • Best sellers"),
+                  ("Hats", "Caps • Beanies • Street style"),
+                  ("Coats", "Winter • Puffers • Warm picks"),
+                  ("Accessories", "Belts • Watches • Wallets"),
+                  ("Perfumes", "Fresh • Woody • Top rated"),
+                ],
+                media: const CardMedia(bg: "assets/articles/hats.jpeg"),
               ),
 
               const SizedBox(height: 22),
 
               _sectionHeader(
-                "Nearby Shops",
-                "Fast near you",
-                Icons.near_me_rounded,
-              ),
+                  "Nearby Shops", "Fast near you", Icons.near_me_rounded),
               const SizedBox(height: 12),
               _nearbyShops(context, nearbyMedia),
 
-              const SizedBox(height: 90),
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -344,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // TOP: Location (left) + Cart & Profile (right)
+  // TOP: Location + Cart + Profile
   // ─────────────────────────────────────────────────────────────
   Widget _topLocationRow(BuildContext context) {
     final label = _selectedLocation?.label ?? "Current location";
@@ -360,10 +457,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               final result = await Navigator.push<SelectedLocation>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LocationSelectScreen(
-                    current: _selectedLocation,
-                    saved: List.of(_savedLocations),
-                  ),
+                  builder: (_) =>
+                      LocationSelectScreen(
+                        current: _selectedLocation,
+                        saved: List.of(_savedLocations),
+                      ),
                 ),
               );
 
@@ -411,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Search bar row
+  // Search bar
   // ─────────────────────────────────────────────────────────────
   Widget _searchRow(BuildContext context) {
     return ClipRRect(
@@ -423,7 +521,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.68),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.80), width: 1.1),
+            border: Border.all(
+                color: Colors.white.withOpacity(0.80), width: 1.1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -462,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // HERO CARD (your palette)
+  // HERO CARD
   // ─────────────────────────────────────────────────────────────
   Widget _heroCard(BuildContext context) {
     final t = _floatT.value;
@@ -497,7 +596,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.1),
+                  border: Border.all(
+                      color: Colors.white.withOpacity(0.18), width: 1.1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.16),
@@ -540,7 +640,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 children: [
                                   const _GlassTagDark(text: "2-HOUR DELIVERY"),
                                   const Spacer(),
-                                  const _MiniGlassIconDark(icon: Icons.bolt_rounded),
+                                  const _MiniGlassIconDark(
+                                      icon: Icons.bolt_rounded),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -578,7 +679,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   _HeroPill(
                                     text: "Deals",
                                     filled: false,
-                                    onTap: () => HapticFeedback.selectionClick(),
+                                    onTap: () =>
+                                        HapticFeedback.selectionClick(),
                                   ),
                                 ],
                               ),
@@ -638,7 +740,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.66),
                     borderRadius: BorderRadius.circular(999),
@@ -703,49 +806,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ✅ HORIZONTAL CARDS (Foodpanda-like)
-  // image on top + glass info footer below
+  // HORIZONTAL CARDS (Foodpanda-like)
+
   // ─────────────────────────────────────────────────────────────
+
+
   Widget _horizontalCards({
     required double height,
-    required String titleText,
-    required String metaText,
-    required CardMedia media,
-    bool routeToShop = true,
-    bool isAd = false,
-    String? offerText,
-    String? proText,
+    required List<ShopCardData> items,
   }) {
     return SizedBox(
       height: height,
       child: ListView.separated(
         physics: const BouncingScrollPhysics(),
         scrollDirection: Axis.horizontal,
-        itemCount: 6,
+        itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
+          final item = items[index];
+
           return _PressScale(
             downScale: 0.98,
             borderRadius: BorderRadius.circular(22),
             onTap: () {
               HapticFeedback.lightImpact();
-              if (!routeToShop) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ShopScreen(shopName: "Urban Style Store"),
+                  builder: (_) => ShopScreen(shopName: item.name),
                 ),
               );
             },
             child: _TopImageGlassFooterCard(
               width: 260,
               height: height,
-              image: media.bg,
-              title: titleText,
-              subtitle: metaText,
-              isAd: isAd,
-              offerText: offerText,
-              proText: proText,
+              image: item.image,
+              title: item.name,
+              subtitle: item.meta,
+              isAd: item.isAd,
+              offerText: item.offer,
+              proText: item.pro,
               primary: _primary,
               secondary: _secondary,
               ink: _ink,
@@ -757,20 +857,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Nearby Shops (kept as your nice row cards)
+  // Nearby Shops
   // ─────────────────────────────────────────────────────────────
   Widget _nearbyShops(BuildContext context, List<CardMedia> media) {
-    final shopNames = [
-      "Urban Fashion Hub",
-      "Boutique Central",
-      "Style Gallery",
-      "Trendy Emporium"
-    ];
+    final shopNames = ["Charcoal", "Monark", "Outfitters", "Uniworth"];
     final distances = ["1.2 km", "2.5 km", "3.1 km", "0.8 km"];
     final ratings = ["4.7", "4.5", "4.9", "4.3"];
 
     return Column(
-      children: List.generate(4, (index) {
+      children: List.generate(media.length, (index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: _NearbyImageRowCard(
@@ -795,6 +890,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _trendingCategoryCards({
+    required double height,
+    required List<(String, String)> items,
+    required CardMedia media,
+  }) {
+    return SizedBox(
+      height: 300,
+      child: ListView.separated(
+        physics: const BouncingScrollPhysics(),
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final (title, meta) = items[index];
+
+          return _PressScale(
+            downScale: 0.98,
+            borderRadius: BorderRadius.circular(22),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => ShopListingScreen(category: title)),
+              );
+            },
+            child: _TopImageGlassFooterCard(
+              width: 230,
+              height: height,
+              image: media.bg,
+              title: title,
+              subtitle: meta,
+              isAd: false,
+              offerText: "Trending",
+              proText: "Tap to explore",
+              primary: _primary,
+              secondary: _secondary,
+              ink: _ink,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────
   // Persistent bottom bar (Flash Deals)
   // ─────────────────────────────────────────────────────────────
@@ -809,6 +949,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
               height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -820,9 +961,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.14),
-                  width: 1.0,
-                ),
+                    color: Colors.white.withOpacity(0.14), width: 1.0),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.22),
@@ -831,11 +970,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center, // ✅ IMPORTANT
                 children: [
-                  Icon(Icons.bolt_rounded,
-                      color: Colors.white.withOpacity(0.92), size: 20),
+                  Icon(
+                      Icons.bolt_rounded, color: Colors.white.withOpacity(0.92),
+                      size: 20),
                   const SizedBox(width: 10),
                   Text(
                     "Flash Deals",
@@ -847,18 +987,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(width: 10),
+
+                  // ✅ FIX: fixed-height strip + centered list
                   Expanded(
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: 6,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, i) => _DealChip(
-                        text: ["25% OFF", "BOGO", "Rs.199", "1+1", "Mega", "Hot"][i],
+                    child: Center(
+                      child: SizedBox(
+                        height: 34, // ✅ keeps chips vertically centered
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: 6,
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(width: 10),
+                          itemBuilder: (context, i) =>
+                              _DealChip(
+                                text: const [
+                                  "25% OFF",
+                                  "BOGO",
+                                  "Rs.199",
+                                  "1+1",
+                                  "Mega",
+                                  "Hot"
+                                ][i],
+                              ),
+                        ),
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 8),
+
+                  // ✅ keep your View button as-is
                   _PressScale(
                     downScale: 0.98,
                     borderRadius: BorderRadius.circular(999),
@@ -868,19 +1028,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         SnackBar(
                           content: Text(
                             "Flash deals opened",
-                            style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                            style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w800),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.14),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.16), width: 1),
+                        border: Border.all(color: Colors.white.withOpacity(
+                            0.16), width: 1),
                       ),
                       child: Text(
                         "View",
@@ -958,24 +1120,15 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
         borderRadius: cardR,
         child: Stack(
           children: [
-            // subtle glass base behind everything (gives depth)
-            Positioned.fill(
-              child: Container(
-                color: Colors.white.withOpacity(0.45),
-              ),
-            ),
-
+            Positioned.fill(child: Container(color: Colors.white.withOpacity(0.45))),
             Column(
               children: [
-                // IMAGE AREA
                 Expanded(
                   child: ClipRRect(
                     borderRadius: imgR,
                     child: Stack(
                       children: [
                         Positioned.fill(child: _img(widget.image, fit: BoxFit.cover)),
-
-                        // top gradient like apps
                         Positioned.fill(
                           child: IgnorePointer(
                             child: DecoratedBox(
@@ -992,8 +1145,6 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
                             ),
                           ),
                         ),
-
-                        // heart button (top-right)
                         Positioned(
                           top: 10,
                           right: 10,
@@ -1006,8 +1157,6 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
                             },
                           ),
                         ),
-
-                        // Offer badge (top-left) like "10% off"
                         if ((widget.offerText ?? "").isNotEmpty)
                           Positioned(
                             top: 10,
@@ -1018,8 +1167,6 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
                               tint: widget.secondary,
                             ),
                           ),
-
-                        // "Ad" badge (bottom-right on image)
                         if (widget.isAd)
                           Positioned(
                             bottom: 10,
@@ -1030,8 +1177,6 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
                     ),
                   ),
                 ),
-
-                // GLASS FOOTER (text below)
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(22),
@@ -1090,8 +1235,6 @@ class _TopImageGlassFooterCardState extends State<_TopImageGlassFooterCard> {
                 ),
               ],
             ),
-
-            // outer highlight border
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
@@ -1193,6 +1336,17 @@ class _GlassBadge extends StatelessWidget {
     );
   }
 }
+// ✅ Replace FAB overlay with a FULL AI SECTION (electric border fill + beating heart + smoke)
+// ✅ Keep your existing AI flow (picker → generating dialog → results) intact
+//
+// What you’ll do:
+// 1) Remove AiOutfitFabOverlay(...) from your HomeScreen Stack.
+// 2) Add the AiOutfitSection(...) widget in your scroll body where you want the AI section.
+// 3) Keep your onTap logic exactly the same (moved into _openAiFlow()).
+//
+// NOTE: This code is self-contained and “modular”: you can edit only AiOutfitSection
+// later to improve visuals without touching the rest.
+
 
 class _AdPill extends StatelessWidget {
   @override
@@ -1237,8 +1391,7 @@ class _ProPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.workspace_premium_rounded,
-                  size: 14, color: primary.withOpacity(0.92)),
+              Icon(Icons.workspace_premium_rounded, size: 14, color: primary.withOpacity(0.92)),
               const SizedBox(width: 6),
               Text(
                 text,
@@ -1260,7 +1413,6 @@ class _ProPill extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────
 // Location selection page (Google Map + Saved Locations)
-// Returns SelectedLocation via Navigator.pop
 // ─────────────────────────────────────────────────────────────
 class LocationSelectScreen extends StatefulWidget {
   final SelectedLocation? current;
@@ -1328,11 +1480,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
                   child: IgnorePointer(
                     child: Transform.translate(
                       offset: const Offset(0, -16),
-                      child: Icon(
-                        Icons.location_pin,
-                        size: 44,
-                        color: primary.withOpacity(0.95),
-                      ),
+                      child: Icon(Icons.location_pin, size: 44, color: primary.withOpacity(0.95)),
                     ),
                   ),
                 ),
@@ -1446,8 +1594,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
     return showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text("Name this location",
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+        title: Text("Name this location", style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
         content: TextField(
           controller: c,
           decoration: const InputDecoration(hintText: "e.g., Home, Office"),
@@ -1474,7 +1621,7 @@ class SelectedLocation {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SMALL UI PARTS
+// SMALL UI PARTS (your existing ones)
 // ─────────────────────────────────────────────────────────────
 class _LocationPill extends StatelessWidget {
   final String label;
@@ -1898,10 +2045,7 @@ class _ProfilePuck extends StatelessWidget {
                     gradient: RadialGradient(
                       center: const Alignment(-0.65, -0.65),
                       radius: 1.0,
-                      colors: [
-                        Colors.white.withOpacity(0.65),
-                        Colors.transparent,
-                      ],
+                      colors: [Colors.white.withOpacity(0.65), Colors.transparent],
                       stops: const [0.0, 0.7],
                     ),
                   ),
@@ -2235,7 +2379,7 @@ class _HeroPill extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ Nearby card (unchanged from your version)
+// Nearby card (unchanged)
 // ─────────────────────────────────────────────────────────────
 class _NearbyImageRowCard extends StatelessWidget {
   final String name;
@@ -2266,14 +2410,11 @@ class _NearbyImageRowCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Stack(
           children: [
-            // FULL background image
             Positioned.fill(
               child: image == null
                   ? Container(color: Colors.white.withOpacity(0.75))
                   : _img(image!, fit: BoxFit.cover),
             ),
-
-            // overlay for readability
             Positioned.fill(
               child: IgnorePointer(
                 child: Container(
@@ -2291,16 +2432,12 @@ class _NearbyImageRowCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // frosted glaze
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(color: Colors.white.withOpacity(0.06)),
               ),
             ),
-
-            // content glass row
             Padding(
               padding: const EdgeInsets.all(14),
               child: ClipRRect(
@@ -2577,5 +2714,757 @@ class _ShimmerSweep extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ============================================================================
+// ✅ NEW: AI OUTFIT SECTION (MODULAR)
+// - On click:
+//    1) Electric border “travels” around edges
+//    2) Border fills/glows stronger
+//    3) Then triggers your onActivated() to open AI flow
+// - Center: Heartbeat core with smoky aura
+// ============================================================================
+// ✅ FUTURISTIC AI OUTFIT SECTION (center AI core + wires + electrifying border)
+// - Idle: AI core “breathes”, wires softly pulse, border has faint energy shimmer
+// - Tap: energy runs from core through wires → completes border current → then opens screen
+//
+// IMPORTANT imports you need in this file:
+// import 'dart:math';
+// import 'dart:ui' as ui;
+// import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+// import 'package:google_fonts/google_fonts.dart';
+
+class AiOutfitSection extends StatefulWidget {
+  final Color primary;
+  final Color secondary;
+  final Color other;
+  final Color ink;
+  final Future<void> Function() onActivated;
+
+  const AiOutfitSection({
+    super.key,
+    required this.primary,
+    required this.secondary,
+    required this.other,
+    required this.ink,
+    required this.onActivated,
+  });
+
+  @override
+  State<AiOutfitSection> createState() => _AiOutfitSectionState();
+}
+
+class _AiOutfitSectionState extends State<AiOutfitSection>
+    with TickerProviderStateMixin {
+  late final AnimationController _idleCtrl;
+  late final AnimationController _electricCtrl;
+
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Ambient idle pulse
+    _idleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+
+    // Electric fill (tap)
+    _electricCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 980),
+    );
+  }
+
+  @override
+  void dispose() {
+    _idleCtrl.dispose();
+    _electricCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _activate() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    HapticFeedback.mediumImpact();
+
+    // Run the electric sequence (wires → border complete)
+    await _electricCtrl.forward(from: 0);
+
+    await Future.delayed(const Duration(milliseconds: 120));
+
+    await widget.onActivated();
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = BorderRadius.circular(26);
+
+    return _PressScale(
+      downScale: 0.985,
+      borderRadius: r,
+      onTap: _activate,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_idleCtrl, _electricCtrl]),
+        builder: (context, _) {
+          final t = _idleCtrl.value; // 0..1
+          final e = _electricCtrl.value; // 0..1
+
+          // Idle breathing scale
+          final breathe = 1.0 + 0.035 * sin(t * pi * 2);
+
+          // Small drift for aura/wires
+          final drift = sin(t * pi * 2) * 1.6;
+
+          // Electric intensity
+          final glow = lerpDouble(0.12, 0.30, Curves.easeOut.transform(e))!;
+
+          return ClipRRect(
+            borderRadius: r,
+            child: Stack(
+              children: [
+                // Base glass card
+                BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.70),
+                      borderRadius: r,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.78),
+                        width: 1.1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 22,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "AI Outfit Studio",
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16.2,
+                                  fontWeight: FontWeight.w900,
+                                  color: widget.ink.withOpacity(0.90),
+                                  letterSpacing: -0.25,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Tap the AI core. Energy runs through wires and electrifies the border before launch.",
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12.2,
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.ink.withOpacity(0.58),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _AiChip(text: "Brands", color: widget.primary),
+                                  _AiChip(text: "Styles", color: widget.secondary),
+                                  _AiChip(text: "5 Results", color: widget.other),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // ✅ Center AI core cluster (NOT heart)
+                        SizedBox(
+                          width: 104,
+                          height: 104,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Ambient “plasma” aura
+                              Transform.translate(
+                                offset: Offset(0, drift),
+                                child: _PlasmaAura(
+                                  a: widget.primary,
+                                  b: widget.secondary,
+                                  intensity: 0.18 + (1 - e) * 0.06,
+                                ),
+                              ),
+
+                              // Core glow
+                              _CoreGlow(
+                                color: widget.primary,
+                                intensity: 0.12 + glow,
+                              ),
+
+                              // AI core button
+                              Transform.scale(
+                                scale: breathe,
+                                child: _AiCoreButton(
+                                  primary: widget.primary,
+                                  secondary: widget.secondary,
+                                  ink: widget.ink,
+                                  busy: _busy,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ✅ Wires that connect core → border + current traveling
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _WireNetworkPainter(
+                        idleT: t,
+                        electricT: e,
+                        primary: widget.primary,
+                        secondary: widget.secondary,
+                        strength: _busy ? 1.0 : 0.7,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ✅ Electric border: completes before opening screen
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _ElectricBorderCompletePainter(
+                        t: e,
+                        primary: widget.primary,
+                        secondary: widget.secondary,
+                        strength: _busy ? 1.0 : 0.7,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Subtle top highlight
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: r,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withOpacity(0.22),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.04),
+                          ],
+                          stops: const [0.0, 0.55, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AiChip extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _AiChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: color.withOpacity(0.20), width: 1),
+          ),
+          child: Text(
+            text,
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w900,
+              fontSize: 11.2,
+              color: const Color(0xFF140504).withOpacity(0.78),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AiCoreButton extends StatelessWidget {
+  final Color primary;
+  final Color secondary;
+  final Color ink;
+  final bool busy;
+
+  const _AiCoreButton({
+    required this.primary,
+    required this.secondary,
+    required this.ink,
+    required this.busy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          width: 66,
+          height: 66,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                primary.withOpacity(0.96),
+                secondary.withOpacity(0.86),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.28), width: 1.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 22,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: busy
+                  ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white.withOpacity(0.92),
+                  ),
+                ),
+              )
+                  : Column(
+                key: const ValueKey("ai"),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome_rounded,
+                      color: Colors.white.withOpacity(0.95), size: 22),
+                  const SizedBox(height: 2),
+                  Text(
+                    "AI",
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.white.withOpacity(0.95),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CoreGlow extends StatelessWidget {
+  final Color color;
+  final double intensity;
+  const _CoreGlow({required this.color, required this.intensity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 94,
+      height: 94,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withOpacity(intensity),
+            color.withOpacity(intensity * 0.55),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.60, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlasmaAura extends StatelessWidget {
+  final Color a;
+  final Color b;
+  final double intensity;
+  const _PlasmaAura({required this.a, required this.b, required this.intensity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        _softBlob(0, 0, 86, a.withOpacity(intensity)),
+        _softBlob(18, 18, 58, b.withOpacity(intensity * 0.95)),
+        _softBlob(-16, 24, 64, a.withOpacity(intensity * 0.80)),
+      ],
+    );
+  }
+
+  Widget _softBlob(double dx, double dy, double size, Color c) {
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: c),
+        ),
+      ),
+    );
+  }
+}
+// Helper: match your card background look (glass white)
+Color _bgWire(Color primary, double strength) =>
+    Color.lerp(Colors.white.withOpacity(0.0), Colors.white.withOpacity(0.70), 1.0)!
+        .withOpacity(0.35 * strength);
+
+Color _bgBorder(double strength) =>
+    Colors.white.withOpacity(0.35 * strength); // subtle, blends into glass
+
+Color _darkNeonRed(Color primary) {
+  final hot = Color.lerp(const Color(0xFFFF1A1A), primary, 0.55)!;
+  return Color.lerp(hot, const Color(0xFF120000), 0.18)!;
+}
+
+/// ✅ Wires: idle = background-ish, click = dark neon current travels
+class _WireNetworkPainter extends CustomPainter {
+  final double idleT;
+  final double electricT;
+  final Color primary;
+  final Color secondary;
+  final double strength;
+
+  _WireNetworkPainter({
+    required this.idleT,
+    required this.electricT,
+    required this.primary,
+    required this.secondary,
+    required this.strength,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 0..0.40 = wires phase
+    final wiresP = (electricT / 0.40).clamp(0.0, 1.0);
+    final neon = _darkNeonRed(primary);
+
+    final coreCenter = Offset(size.width - 16 - 52, 16 + 52);
+
+    final r = 26.0;
+    final rect = Rect.fromLTWH(3.0, 3.0, size.width - 6.0, size.height - 6.0);
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(r));
+
+    final targets = <Offset>[
+      Offset(rr.left + rr.width * 0.62, rr.top),
+      Offset(rr.right, rr.top + rr.height * 0.48),
+      Offset(rr.left + rr.width * 0.55, rr.bottom),
+      Offset(rr.left, rr.top + rr.height * 0.52),
+    ];
+
+    // ✅ IDLE wires = background-ish (almost invisible)
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..color = _bgWire(primary, strength).withOpacity(0.22 * strength);
+
+    final pulse = (0.5 + 0.5 * sin(idleT * pi * 2));
+    final shimmer = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
+      ..color = _bgWire(primary, strength).withOpacity((0.10 + 0.10 * pulse) * strength);
+
+    // ✅ CLICK current paints (neon)
+    final energizedOuter = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.6
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+
+    final energizedInner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.8
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    for (final target in targets) {
+      final path = Path();
+
+      final mid = Offset(
+        (coreCenter.dx + target.dx) / 2,
+        (coreCenter.dy + target.dy) / 2,
+      );
+
+      final bend = 18.0 + 10.0 * sin((idleT * pi * 2) + target.dx * 0.01);
+      final c1 = Offset(
+        coreCenter.dx + (mid.dx - coreCenter.dx) * 0.35,
+        coreCenter.dy + (mid.dy - coreCenter.dy) * 0.35 - bend,
+      );
+      final c2 = Offset(
+        coreCenter.dx + (mid.dx - coreCenter.dx) * 0.75,
+        coreCenter.dy + (mid.dy - coreCenter.dy) * 0.75 + bend * 0.6,
+      );
+
+      path.moveTo(coreCenter.dx, coreCenter.dy);
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, target.dx, target.dy);
+
+      // ✅ idle draw
+      canvas.drawPath(path, base);
+      canvas.drawPath(path, shimmer);
+
+      // ✅ neon current ONLY on click
+      if (wiresP > 0.001) {
+        final pm = path.computeMetrics().first;
+        final len = pm.length;
+        final end = len * Curves.easeOut.transform(wiresP);
+        final segPath = pm.extractPath(0, end, startWithMoveTo: true);
+
+        energizedOuter.shader = ui.Gradient.linear(
+          coreCenter,
+          target,
+          [
+            neon.withOpacity(0.06 * strength),
+            neon.withOpacity(0.95 * strength),
+            neon.withOpacity(0.10 * strength),
+          ],
+          const [0.0, 0.62, 1.0],
+        );
+
+        energizedInner.shader = ui.Gradient.linear(
+          coreCenter,
+          target,
+          [
+            Colors.white.withOpacity(0.40 * strength),
+            neon.withOpacity(1.00 * strength),
+            Colors.white.withOpacity(0.14 * strength),
+          ],
+          const [0.0, 0.52, 1.0],
+        );
+
+        canvas.drawPath(segPath, energizedOuter);
+        canvas.drawPath(segPath, energizedInner);
+
+        final headTan = pm.getTangentForOffset(end.clamp(0, len));
+        if (headTan != null) {
+          final p = headTan.position;
+
+          final sparkOuter = Paint()
+            ..color = neon.withOpacity(0.60 * strength)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+
+          final sparkInner = Paint()
+            ..color = Colors.white.withOpacity(0.52 * strength)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+          canvas.drawCircle(p, 4.3, sparkOuter);
+          canvas.drawCircle(p, 2.0, sparkInner);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WireNetworkPainter oldDelegate) {
+    return oldDelegate.idleT != idleT ||
+        oldDelegate.electricT != electricT ||
+        oldDelegate.primary != primary ||
+        oldDelegate.secondary != secondary ||
+        oldDelegate.strength != strength;
+  }
+}
+
+/// ✅ Border: idle = background-ish, click = dark neon current travels & completes
+class _ElectricBorderCompletePainter extends CustomPainter {
+  final double t;
+  final Color primary;
+  final Color secondary;
+  final double strength;
+
+  _ElectricBorderCompletePainter({
+    required this.t,
+    required this.primary,
+    required this.secondary,
+    required this.strength,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final neon = _darkNeonRed(primary);
+
+    final r = 26.0;
+    final rect = Rect.fromLTWH(3.0, 3.0, size.width - 6.0, size.height - 6.0);
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(r));
+
+    // border phase: 0.40..1.0
+    final borderP = ((t - 0.40) / 0.60).clamp(0.0, 1.0);
+
+    // ✅ IDLE border = background-ish (blends into glass)
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..color = _bgBorder(strength).withOpacity(0.35 * strength);
+    canvas.drawRRect(rr, base);
+
+    // ✅ If not charging, keep it quiet and return
+    if (borderP <= 0.001) {
+      final idleGlow = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+        ..color = _bgBorder(strength).withOpacity(0.18 * strength);
+      canvas.drawRRect(rr, idleGlow);
+      return;
+    }
+
+    // ✅ Charging neon bloom
+    final bloom = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18)
+      ..color = neon.withOpacity(
+        lerpDouble(0.08, 0.38, Curves.easeOut.transform(borderP))! * strength,
+      );
+    canvas.drawRRect(rr, bloom);
+
+    final path = Path()..addRRect(rr);
+    final pm = path.computeMetrics().first;
+    final len = pm.length;
+
+    final end = len * Curves.easeOut.transform(borderP);
+    final donePath = pm.extractPath(0, end, startWithMoveTo: true);
+
+    // Completion stroke (neon outer + white-hot core)
+    final doneOuter = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5.2
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+
+    final doneInner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.1
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    doneOuter.shader = ui.Gradient.linear(
+      rect.topLeft,
+      rect.bottomRight,
+      [
+        neon.withOpacity(0.18 * strength),
+        neon.withOpacity(1.00 * strength),
+        neon.withOpacity(0.20 * strength),
+      ],
+      const [0.0, 0.55, 1.0],
+    );
+
+    doneInner.shader = ui.Gradient.linear(
+      rect.topLeft,
+      rect.bottomRight,
+      [
+        Colors.white.withOpacity(0.45 * strength),
+        neon.withOpacity(1.00 * strength),
+        Colors.white.withOpacity(0.18 * strength),
+      ],
+      const [0.0, 0.55, 1.0],
+    );
+
+    canvas.drawPath(donePath, doneOuter);
+    canvas.drawPath(donePath, doneInner);
+
+    // Traveling head
+    final seg = len * 0.20;
+    final head = end % len;
+    final segPath =
+    pm.extractPath(head, (head + seg).clamp(0, len), startWithMoveTo: true);
+
+    final boltOuter = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5.6
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+
+    final boltInner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.3
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    boltOuter.shader = ui.Gradient.linear(
+      rect.topLeft,
+      rect.bottomRight,
+      [
+        neon.withOpacity(0.24 * strength),
+        neon.withOpacity(1.00 * strength),
+        neon.withOpacity(0.24 * strength),
+      ],
+      const [0.0, 0.55, 1.0],
+    );
+
+    boltInner.shader = ui.Gradient.linear(
+      rect.topLeft,
+      rect.bottomRight,
+      [
+        Colors.white.withOpacity(0.52 * strength),
+        neon.withOpacity(1.00 * strength),
+        Colors.white.withOpacity(0.20 * strength),
+      ],
+      const [0.0, 0.55, 1.0],
+    );
+
+    canvas.drawPath(segPath, boltOuter);
+    canvas.drawPath(segPath, boltInner);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ElectricBorderCompletePainter oldDelegate) {
+    return oldDelegate.t != t ||
+        oldDelegate.primary != primary ||
+        oldDelegate.secondary != secondary ||
+        oldDelegate.strength != strength;
   }
 }

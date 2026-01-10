@@ -21,8 +21,7 @@ class ProductScreen extends StatefulWidget {
   State<ProductScreen> createState() => _ProductScreenState();
 }
 
-class _ProductScreenState extends State<ProductScreen>
-    with TickerProviderStateMixin {
+class _ProductScreenState extends State<ProductScreen> with TickerProviderStateMixin {
   // ───────────────────────── Page enter ─────────────────────────
   late final AnimationController _enterCtrl;
   late final Animation<double> _fade;
@@ -39,6 +38,10 @@ class _ProductScreenState extends State<ProductScreen>
 
   // ───────────────────────── Success sheet ─────────────────────────
   bool _showAddedSheet = false;
+
+  // ✅ Show bottom CTA ONLY when scrolled to end
+  final ScrollController _scrollCtrl = ScrollController();
+  bool _showBottomCTA = false;
 
   // Gallery
   final PageController _pageCtrl = PageController(viewportFraction: 1.0);
@@ -73,34 +76,42 @@ class _ProductScreenState extends State<ProductScreen>
   void initState() {
     super.initState();
 
-    _enterCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+    _enterCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _fade = CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOut);
-    _slideUp = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOutCubic));
+    _slideUp = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOutCubic));
 
-    _ambientCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 5600),
-    )..repeat(reverse: true);
+    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 5600))..repeat(reverse: true);
     _bgT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOut);
     _floatT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
 
-    _ctaCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 140),
-    );
+    _ctaCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 140));
     _ctaT = CurvedAnimation(parent: _ctaCtrl, curve: Curves.easeOut);
+
+    _scrollCtrl.addListener(_onScroll);
 
     _enterCtrl.forward();
   }
 
+  void _onScroll() {
+    if (!_scrollCtrl.hasClients) return;
+    final max = _scrollCtrl.position.maxScrollExtent;
+    final cur = _scrollCtrl.position.pixels;
+
+    // ✅ show when user reaches (near) the end
+    const threshold = 120.0;
+    final shouldShow = (max - cur) <= threshold;
+
+    if (shouldShow != _showBottomCTA) {
+      setState(() => _showBottomCTA = shouldShow);
+    }
+  }
+
   @override
   void dispose() {
+    _scrollCtrl.removeListener(_onScroll);
+    _scrollCtrl.dispose();
+
     _enterCtrl.dispose();
     _ambientCtrl.dispose();
     _ctaCtrl.dispose();
@@ -130,8 +141,15 @@ class _ProductScreenState extends State<ProductScreen>
             child: SlideTransition(
               position: _slideUp,
               child: SingleChildScrollView(
+                controller: _scrollCtrl,
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16, topInset + 92, 16, 170),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  topInset + 92,
+                  16,
+                  // keep bottom space so CTA doesn't cover last content
+                  170,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -153,6 +171,18 @@ class _ProductScreenState extends State<ProductScreen>
                     const SizedBox(height: 16),
                     _reviewsCard(),
                     const SizedBox(height: 34),
+
+                    // ✅ optional hint area at end (looks nice)
+                    Center(
+                      child: Text(
+                        "End of details",
+                        style: AppText.subtle().copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink.withOpacity(0.45),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
                   ],
                 ),
               ),
@@ -160,7 +190,9 @@ class _ProductScreenState extends State<ProductScreen>
           ),
 
           _topBar(context),
-          _premiumBottomCTA(context),
+
+          // ✅ CTA only shows when user reaches the end
+          if (_showBottomCTA) _premiumBottomCTA(context),
 
           if (_showAddedSheet)
             _AddedToCartBottomSheet(
@@ -246,6 +278,7 @@ class _ProductScreenState extends State<ProductScreen>
 
   Widget _galleryCard() {
     return _GlassCard(
+      // ✅ now SOLID theme card (no glass / no reddish tint bleed)
       floatingT: _floatT.value,
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -263,8 +296,6 @@ class _ProductScreenState extends State<ProductScreen>
                     fit: StackFit.expand,
                     children: [
                       Image.network(_images[i], fit: BoxFit.cover),
-
-                      // Premium top highlight
                       Positioned.fill(
                         child: IgnorePointer(
                           child: DecoratedBox(
@@ -283,8 +314,6 @@ class _ProductScreenState extends State<ProductScreen>
                           ),
                         ),
                       ),
-
-                      // subtle “shine”
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Opacity(
@@ -319,7 +348,6 @@ class _ProductScreenState extends State<ProductScreen>
           ),
           const SizedBox(height: 12),
 
-          // Dots
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_images.length, (i) {
@@ -332,16 +360,13 @@ class _ProductScreenState extends State<ProductScreen>
                 height: 6,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
-                  color: active
-                      ? AppColors.ink.withOpacity(0.85)
-                      : AppColors.divider.withOpacity(0.9),
+                  color: active ? AppColors.ink.withOpacity(0.85) : AppColors.divider.withOpacity(0.9),
                 ),
               );
             }),
           ),
           const SizedBox(height: 12),
 
-          // Thumbnails
           SizedBox(
             height: 66,
             child: ListView.separated(
@@ -370,19 +395,11 @@ class _ProductScreenState extends State<ProductScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: active
-                            ? [
-                          Colors.white.withOpacity(0.88),
-                          AppColors.bg2.withOpacity(0.82),
-                        ]
-                            : [
-                          Colors.white.withOpacity(0.62),
-                          Colors.white.withOpacity(0.42),
-                        ],
+                            ? [Colors.white.withOpacity(0.92), AppColors.bg2.withOpacity(0.92)]
+                            : [Colors.white.withOpacity(0.80), Colors.white.withOpacity(0.62)],
                       ),
                       border: Border.all(
-                        color: active
-                            ? AppColors.ink.withOpacity(0.22)
-                            : AppColors.divider.withOpacity(0.9),
+                        color: active ? AppColors.ink.withOpacity(0.22) : AppColors.divider.withOpacity(0.9),
                         width: active ? 1.4 : 1.0,
                       ),
                       boxShadow: active
@@ -391,12 +408,6 @@ class _ProductScreenState extends State<ProductScreen>
                           color: Colors.black.withOpacity(0.12),
                           blurRadius: 18,
                           offset: const Offset(0, 12),
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.75),
-                          blurRadius: 12,
-                          offset: const Offset(0, -6),
-                          spreadRadius: -6,
                         ),
                       ]
                           : [
@@ -426,9 +437,15 @@ class _ProductScreenState extends State<ProductScreen>
   Widget _headerCard() {
     return _SectionCard(
       floatingT: _floatT.value,
-      titleWidget: _Title3DHolo(
-        text: widget.productName,
-        fontSize: 18,
+      titleWidget: Text(
+        widget.productName,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppText.h2().copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          color: AppColors.ink,
+        ),
       ),
       subtitle: widget.shopName,
       right: _ratingPill(),
@@ -448,7 +465,7 @@ class _ProductScreenState extends State<ProductScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.62),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.divider.withOpacity(0.9)),
         boxShadow: _S.shadowSm,
@@ -458,10 +475,7 @@ class _ProductScreenState extends State<ProductScreen>
         children: [
           Icon(Icons.star_rounded, size: 16, color: Colors.amber),
           SizedBox(width: 4),
-          Text(
-            "4.8",
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-          ),
+          Text("4.8", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
         ],
       ),
     );
@@ -475,18 +489,12 @@ class _ProductScreenState extends State<ProductScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: inStock ? ok.withOpacity(0.12) : warn.withOpacity(0.14),
-        border: Border.all(
-          color: inStock ? ok.withOpacity(0.22) : warn.withOpacity(0.22),
-        ),
+        color: inStock ? ok.withOpacity(0.10) : warn.withOpacity(0.12),
+        border: Border.all(color: inStock ? ok.withOpacity(0.22) : warn.withOpacity(0.22)),
       ),
       child: Text(
         inStock ? "In stock" : "Out of stock",
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-          color: inStock ? ok : warn,
-        ),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: inStock ? ok : warn),
       ),
     );
   }
@@ -521,10 +529,7 @@ class _ProductScreenState extends State<ProductScreen>
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(999),
                         gradient: LinearGradient(
@@ -536,11 +541,7 @@ class _ProductScreenState extends State<ProductScreen>
                       ),
                       child: Text(
                         "$discount% off",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                     ),
                   ],
@@ -555,53 +556,45 @@ class _ProductScreenState extends State<ProductScreen>
   }
 
   Widget _qtyStepperNew() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: Colors.white.withOpacity(0.62),
-            border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-            boxShadow: _S.shadowCard,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.white,
+        border: Border.all(color: AppColors.divider.withOpacity(0.92)),
+        boxShadow: _S.shadowCard,
+      ),
+      child: Row(
+        children: [
+          _PressScale(
+            onTap: () {
+              if (_qty > 1) setState(() => _qty--);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Icon(Icons.remove_rounded, size: 18, color: AppColors.ink),
+            ),
           ),
-          child: Row(
-            children: [
-              _PressScale(
-                onTap: () {
-                  if (_qty > 1) setState(() => _qty--);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Icon(Icons.remove_rounded,
-                      size: 18, color: AppColors.ink),
+          SizedBox(
+            width: 36,
+            child: Center(
+              child: Text(
+                _qty.toString(),
+                style: AppText.body().copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink.withOpacity(0.92),
                 ),
               ),
-              SizedBox(
-                width: 36,
-                child: Center(
-                  child: Text(
-                    _qty.toString(),
-                    style: AppText.body().copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.ink.withOpacity(0.92),
-                    ),
-                  ),
-                ),
-              ),
-              _PressScale(
-                onTap: () => setState(() => _qty++),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child:
-                  Icon(Icons.add_rounded, size: 18, color: AppColors.ink),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          _PressScale(
+            onTap: () => setState(() => _qty++),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Icon(Icons.add_rounded, size: 18, color: AppColors.ink),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -631,7 +624,7 @@ class _ProductScreenState extends State<ProductScreen>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: Colors.white.withOpacity(0.62),
+              color: Colors.white,
               border: Border.all(color: AppColors.divider.withOpacity(0.92)),
             ),
             child: Text(
@@ -654,14 +647,7 @@ class _ProductScreenState extends State<ProductScreen>
       height: 46,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withOpacity(0.88),
-            AppColors.bg2.withOpacity(0.78),
-          ],
-        ),
+        color: Colors.white,
         border: Border.all(color: AppColors.divider.withOpacity(0.92)),
         boxShadow: _S.shadowSm,
       ),
@@ -715,9 +701,7 @@ class _ProductScreenState extends State<ProductScreen>
 
   Widget _stockCard() {
     final label = _inStock ? "In stock" : "Out of stock";
-    final hint = _inStock
-        ? (_stockLeft <= 8 ? "Only $_stockLeft left" : "Available")
-        : "Check again soon";
+    final hint = _inStock ? (_stockLeft <= 8 ? "Only $_stockLeft left" : "Available") : "Check again soon";
 
     return _SectionCard(
       floatingT: _floatT.value,
@@ -749,7 +733,7 @@ class _ProductScreenState extends State<ProductScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.62),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.divider.withOpacity(0.92)),
               ),
@@ -821,8 +805,8 @@ class _ProductScreenState extends State<ProductScreen>
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: AppRadius.r18, // ✅ use theme radius
-                  color: Colors.white.withOpacity(0.62),
+                  borderRadius: AppRadius.r18,
+                  color: Colors.white,
                   border: Border.all(color: AppColors.divider.withOpacity(0.92)),
                   boxShadow: _S.shadowSm,
                 ),
@@ -846,91 +830,76 @@ class _ProductScreenState extends State<ProductScreen>
     required int rating,
     required String text,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.58),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-            boxShadow: _S.shadowCard,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withOpacity(0.92),
-                      AppColors.bg2.withOpacity(0.78),
-                    ],
-                  ),
-                  border: Border.all(color: AppColors.divider.withOpacity(0.92)),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  name.characters.first.toUpperCase(),
-                  style: AppText.body().copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.ink.withOpacity(0.92),
-                  ),
-                ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.divider.withOpacity(0.92)),
+        boxShadow: _S.shadowCard,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(color: AppColors.divider.withOpacity(0.92)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              name.characters.first.toUpperCase(),
+              style: AppText.body().copyWith(
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink.withOpacity(0.92),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          name,
-                          style: AppText.body().copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink.withOpacity(0.92),
-                          ),
-                        ),
-                        const Spacer(),
-                        Row(
-                          children: List.generate(
-                            5,
-                                (i) => Icon(
-                              Icons.star_rounded,
-                              size: 14,
-                              color: i < rating
-                                  ? Colors.amber
-                                  : AppColors.divider,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
                     Text(
-                      text,
+                      name,
                       style: AppText.body().copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink.withOpacity(0.55),
-                        height: 1.35,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.ink.withOpacity(0.92),
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: List.generate(
+                        5,
+                            (i) => Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: i < rating ? Colors.amber : AppColors.divider,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  text,
+                  style: AppText.body().copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink.withOpacity(0.55),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -941,7 +910,7 @@ class _ProductScreenState extends State<ProductScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.62),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.divider.withOpacity(0.92)),
       ),
@@ -965,73 +934,60 @@ class _ProductScreenState extends State<ProductScreen>
       top: topInset + 8,
       left: 12,
       right: 12,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.76),
-                  AppColors.bg2.withOpacity(0.58),
-                  Colors.white.withOpacity(0.70),
-                ],
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.divider.withOpacity(0.55)),
+          boxShadow: _S.shadowTopBar,
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _PressScale(
+                onTap: () => Navigator.pop(context),
+                child: _iconPill(Icons.arrow_back_rounded),
               ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.62)),
-              boxShadow: _S.shadowTopBar,
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _PressScale(
-                    onTap: () => Navigator.pop(context),
-                    child: _iconPill(Icons.arrow_back_rounded),
-                  ),
-                ),
-                const _TitleCaps3D(text: "PRODUCT DETAILS"),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: _PressScale(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CartCheckoutScreen(),
-                        ),
-                      );
-                    },
-                    child: _iconPill(Icons.shopping_cart_outlined, badge: "3"),
-                  ),
-                ),
-              ],
+            const _TitleCaps3D(text: "PRODUCT DETAILS"),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _PressScale(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CartCheckoutScreen()),
+                  );
+                },
+                child: _iconPill(Icons.shopping_cart_outlined, badge: "3"),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   Widget _iconPill(IconData icon, {String? badge}) {
+    final red = AppColors.primary; // your theme red
+
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.82),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider.withOpacity(0.78)),
+        border: Border.all(color: red.withOpacity(0.22)), // optional red border
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(icon, color: AppColors.ink),
+          Icon(icon, color: red), // ✅ back + cart icon red
+
           if (badge != null)
             Positioned(
               right: 8,
@@ -1040,7 +996,7 @@ class _ProductScreenState extends State<ProductScreen>
                 width: 16,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: AppColors.danger,
+                  color: red, // ✅ red badge
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: _S.shadowBadge,
                 ),
@@ -1060,6 +1016,7 @@ class _ProductScreenState extends State<ProductScreen>
     );
   }
 
+
   // ───────────────────────── PREMIUM CTA BAR ─────────────────────────
 
   Widget _premiumBottomCTA(BuildContext context) {
@@ -1076,54 +1033,42 @@ class _ProductScreenState extends State<ProductScreen>
             builder: (context, _) {
               final press = lerpDouble(0, 2.6, _ctaT.value)!;
               final lift = lerpDouble(10, 0, _ctaT.value)!;
-              final floatY = sin(_floatT.value * pi * 2) * 2.0;
+              final floatY = sin(_floatT.value * pi * 2) * 1.2;
 
-              return Transform.translate(
-                offset: Offset(0, -lift + press + floatY),
-                child: ClipRRect(
-                  borderRadius: AppRadius.r14,
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        borderRadius: AppRadius.r14,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withOpacity(0.70),
-                            AppColors.bg2.withOpacity(0.52),
-                            Colors.white.withOpacity(0.64),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.70),
-                          width: 1.2,
-                        ),
-                        boxShadow: _S.shadowCtaBar,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(child: _totalMiniCard()),
-                          const SizedBox(width: 10),
-                          _PressScale(
-                            onTap: _inStock
-                                ? () async {
-                              await _ctaCtrl.forward();
-                              await _ctaCtrl.reverse();
-                              if (!mounted) return;
-                              setState(() => _showAddedSheet = true);
-                            }
-                                : () {},
-                            downScale: 0.975,
-                            child: _primaryCTAButton(
-                              enabled: _inStock,
-                              label: _inStock ? "ADD TO CART" : "OUT OF STOCK",
-                            ),
+              return AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                opacity: _showBottomCTA ? 1 : 0,
+                child: Transform.translate(
+                  offset: Offset(0, -lift + press + floatY),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.r14,
+                      color: Colors.white,
+                      border: Border.all(color: AppColors.divider.withOpacity(0.55), width: 1.2),
+                      boxShadow: _S.shadowCtaBar,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(child: _totalMiniCard()),
+                        const SizedBox(width: 10),
+                        _PressScale(
+                          onTap: _inStock
+                              ? () async {
+                            await _ctaCtrl.forward();
+                            await _ctaCtrl.reverse();
+                            if (!mounted) return;
+                            setState(() => _showAddedSheet = true);
+                          }
+                              : () {},
+                          downScale: 0.975,
+                          child: _primaryCTAButton(
+                            enabled: _inStock,
+                            label: _inStock ? "ADD TO CART" : "OUT OF STOCK",
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1136,150 +1081,118 @@ class _ProductScreenState extends State<ProductScreen>
   }
 
   Widget _totalMiniCard() {
-    return ClipRRect(
-      borderRadius: AppRadius.r22,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.r22,
-            color: Colors.white.withOpacity(0.62),
-            border: Border.all(color: Colors.white.withOpacity(0.72)),
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.r22,
+        color: AppColors.bg2,
+        border: Border.all(color: AppColors.divider.withOpacity(0.55)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: Colors.white,
+              border: Border.all(color: AppColors.divider.withOpacity(0.55)),
+            ),
+            alignment: Alignment.center,
+            child: Icon(Icons.shopping_bag_outlined, color: AppColors.ink, size: 22),
           ),
-          child: Row(
+          const SizedBox(width: 10),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.bg2.withOpacity(0.90),
-                      Colors.white.withOpacity(0.70),
-                    ],
-                  ),
-                  border: Border.all(color: AppColors.divider.withOpacity(0.72)),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.shopping_bag_outlined,
-                  color: AppColors.ink,
-                  size: 22,
+              Text(
+                "TOTAL",
+                style: AppText.kicker().copyWith(
+                  color: AppColors.ink.withOpacity(0.55),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
                 ),
               ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "TOTAL",
-                    style: AppText.kicker().copyWith(
-                      color: AppColors.ink.withOpacity(0.55),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    "Rs. ${_format(total)}",
-                    style: AppText.body().copyWith(
-                      color: AppColors.ink.withOpacity(0.92),
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 3),
+              Text(
+                "Rs. ${_format(total)}",
+                style: AppText.body().copyWith(
+                  color: AppColors.ink.withOpacity(0.92),
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _primaryCTAButton({required bool enabled, required String label}) {
-    return ClipRRect(
-      borderRadius: AppRadius.r22,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.r22,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: enabled
-                  ? [AppColors.primary, AppColors.secondary]
-                  : [
-                AppColors.ink.withOpacity(0.20),
-                AppColors.ink.withOpacity(0.14),
-              ],
-            ),
-            boxShadow: enabled ? _S.shadowCtaBtnEnabled : _S.shadowCtaBtnDisabled,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: enabled ? 0.18 : 0.08,
-                    child: Transform.rotate(
-                      angle: -0.35,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          width: 220,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.0),
-                                Colors.white.withOpacity(0.65),
-                                Colors.white.withOpacity(0.0),
-                              ],
-                              stops: const [0.25, 0.5, 0.75],
-                            ),
-                          ),
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.r22,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: enabled
+              ? [AppColors.primary, AppColors.secondary]
+              : [AppColors.ink.withOpacity(0.20), AppColors.ink.withOpacity(0.14)],
+        ),
+        boxShadow: enabled ? _S.shadowCtaBtnEnabled : _S.shadowCtaBtnDisabled,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: enabled ? 0.18 : 0.08,
+                child: Transform.rotate(
+                  angle: -0.35,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 220,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.0),
+                            Colors.white.withOpacity(0.65),
+                            Colors.white.withOpacity(0.0),
+                          ],
+                          stops: const [0.25, 0.5, 0.75],
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    enabled
-                        ? Icons.add_shopping_cart_rounded
-                        : Icons.block_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 0.7,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(enabled ? Icons.add_shopping_cart_rounded : Icons.block_rounded, size: 18, color: Colors.white),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  letterSpacing: 0.7,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1373,6 +1286,7 @@ class _GlowBlob extends StatelessWidget {
   }
 }
 
+/// ✅ Now a SOLID theme card (NO BackdropFilter / NO glass tint)
 class _GlassCard extends StatelessWidget {
   final Widget child;
   final double floatingT;
@@ -1386,37 +1300,25 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final floatY = sin(floatingT * pi * 2) * 2.4;
+    final floatY = sin(floatingT * pi * 2) * 2.0;
 
     return Transform.translate(
       offset: Offset(0, floatY),
-      child: ClipRRect(
-        borderRadius: AppRadius.r22,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.r22,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.76),
-                  Colors.white.withOpacity(0.52),
-                ],
-              ),
-              border: Border.all(color: Colors.white.withOpacity(0.72)),
-              boxShadow: _S.shadowGlass,
-            ),
-            child: child,
-          ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.r22,
+          color: Colors.white, // solid => no reddish bleed
+          border: Border.all(color: AppColors.divider.withOpacity(0.55)),
+          boxShadow: _S.shadowGlass,
         ),
+        child: child,
       ),
     );
   }
 }
 
+/// ✅ Solid section card (no blur / no transparent gradients)
 class _SectionCard extends StatelessWidget {
   final double floatingT;
   final String? title;
@@ -1440,68 +1342,56 @@ class _SectionCard extends StatelessWidget {
 
     return Transform.translate(
       offset: Offset(0, floatY),
-      child: ClipRRect(
-        borderRadius: AppRadius.r22,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.r22,
-              border: Border.all(color: Colors.white.withOpacity(0.70)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.74),
-                  Colors.white.withOpacity(0.52),
-                ],
-              ),
-              boxShadow: _S.shadowMd,
-            ),
-            child: Column(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.r22,
+          color: Colors.white, // solid
+          border: Border.all(color: AppColors.divider.withOpacity(0.55)),
+          boxShadow: _S.shadowMd,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          titleWidget ??
-                              Text(
-                                title ?? "",
-                                style: AppText.h2().copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          const SizedBox(height: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      titleWidget ??
                           Text(
-                            subtitle,
-                            style: AppText.subtle().copyWith(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.ink.withOpacity(0.55),
+                            title ?? "",
+                            style: AppText.h2().copyWith(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.ink,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: AppText.subtle().copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink.withOpacity(0.55),
+                        ),
                       ),
-                    ),
-                    if (right != null) ...[
-                      const SizedBox(width: 10),
-                      right!,
                     ],
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                child,
+                if (right != null) ...[
+                  const SizedBox(width: 10),
+                  right!,
+                ],
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            child,
+          ],
         ),
       ),
     );
@@ -1534,14 +1424,9 @@ class _ChoiceChipNeo extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: active
                 ? [AppColors.primary, AppColors.secondary]
-                : [
-              Colors.white.withOpacity(0.66),
-              Colors.white.withOpacity(0.46),
-            ],
+                : [Colors.white, AppColors.bg2],
           ),
-          border: Border.all(
-            color: Colors.white.withOpacity(active ? 0.18 : 0.70),
-          ),
+          border: Border.all(color: AppColors.divider.withOpacity(0.55)),
           boxShadow: active ? _S.shadowChipActive : _S.shadowChipIdle,
         ),
         child: Text(
@@ -1612,69 +1497,6 @@ class _TitleCaps3D extends StatelessWidget {
   }
 }
 
-class _Title3DHolo extends StatelessWidget {
-  final String text;
-  final double fontSize;
-
-  const _Title3DHolo({
-    required this.text,
-    this.fontSize = 18,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        for (int i = 10; i >= 1; i--)
-          Transform.translate(
-            offset: Offset(0, i.toDouble() * 0.9),
-            child: Text(
-              text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: fontSize,
-                height: 1.08,
-                fontWeight: FontWeight.w900,
-                color: Colors.black.withOpacity(0.05),
-              ),
-            ),
-          ),
-        ShaderMask(
-          shaderCallback: (rect) => LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary, AppColors.secondary, AppColors.primary],
-          ).createShader(rect),
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: fontSize,
-              height: 1.08,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                  color: AppColors.secondary.withOpacity(0.14),
-                ),
-                Shadow(
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                  color: Colors.black.withOpacity(0.10),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ───────────────────────── SUCCESS BOTTOM OVERLAY ─────────────────────────
 
 class _AddedToCartBottomSheet extends StatefulWidget {
@@ -1686,8 +1508,7 @@ class _AddedToCartBottomSheet extends StatefulWidget {
   State<_AddedToCartBottomSheet> createState() => _AddedToCartBottomSheetState();
 }
 
-class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
-    with SingleTickerProviderStateMixin {
+class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
@@ -1699,16 +1520,11 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
   void initState() {
     super.initState();
 
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..forward();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..forward();
 
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.18),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _slide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
     _tickPop = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
@@ -1748,128 +1564,101 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
                 opacity: _fade,
                 child: SlideTransition(
                   position: _slide,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                      child: Container(
-                        width: min(w, 520),
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.72),
-                              Colors.white.withOpacity(0.52),
-                              Colors.white.withOpacity(0.66),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.78),
-                            width: 1.4,
-                          ),
-                          boxShadow: _S.shadowSheet,
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 52,
-                              height: 52,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.0, end: 1.0),
-                                    duration:
-                                    const Duration(milliseconds: 1900),
-                                    curve: Curves.easeOutCubic,
-                                    builder: (_, v, __) {
-                                      return CircularProgressIndicator(
-                                        value: _done ? 1.0 : v,
-                                        strokeWidth: 5,
-                                        backgroundColor:
-                                        AppColors.ink.withOpacity(0.08),
-                                        valueColor: AlwaysStoppedAnimation(
-                                          AppColors.ink.withOpacity(0.78),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  AnimatedScale(
-                                    duration: const Duration(milliseconds: 280),
-                                    curve: Curves.easeOutBack,
-                                    scale: _done
-                                        ? lerpDouble(0.5, 1.0, _tickPop.value)!
-                                        : 0.5,
-                                    child: AnimatedOpacity(
-                                      duration:
-                                      const Duration(milliseconds: 180),
-                                      opacity: _done ? 1 : 0,
-                                      child: Icon(
-                                        Icons.check_rounded,
-                                        size: 26,
-                                        color: AppColors.ink,
-                                      ),
+                  child: Container(
+                    width: min(w, 520),
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      color: Colors.white, // solid (no glass tint)
+                      border: Border.all(color: AppColors.divider.withOpacity(0.55), width: 1.4),
+                      boxShadow: _S.shadowSheet,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 52,
+                          height: 52,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 1900),
+                                curve: Curves.easeOutCubic,
+                                builder: (_, v, __) {
+                                  return CircularProgressIndicator(
+                                    value: _done ? 1.0 : v,
+                                    strokeWidth: 5,
+                                    backgroundColor: AppColors.ink.withOpacity(0.08),
+                                    // ✅ theme red progress ring
+                                    valueColor: AlwaysStoppedAnimation(
+                                      AppColors.primary.withOpacity(0.90),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _done ? "Added to cart" : "Adding to cart…",
-                                    style: AppText.body().copyWith(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.ink,
-                                    ),
+                              AnimatedScale(
+                                duration: const Duration(milliseconds: 280),
+                                curve: Curves.easeOutBack,
+                                scale: _done ? lerpDouble(0.5, 1.0, _tickPop.value)! : 0.5,
+                                child: AnimatedOpacity(
+                                  duration: const Duration(milliseconds: 180),
+                                  opacity: _done ? 1 : 0,
+                                  child: Icon(
+                                    Icons.check_rounded,
+                                    size: 26,
+                                    // ✅ theme red tick
+                                    color: AppColors.primary,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _done
-                                        ? "Redirecting to checkout"
-                                        : "Please wait a moment",
-                                    style: AppText.subtle().copyWith(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.ink.withOpacity(0.55),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(999),
-                                color: Colors.white.withOpacity(0.60),
-                                border: Border.all(
-                                  color: AppColors.divider.withOpacity(0.90),
                                 ),
                               ),
-                              child: Text(
-                                "Done",
-                                style: AppText.kicker().copyWith(
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _done ? "Added to cart" : "Adding to cart…",
+                                style: AppText.body().copyWith(
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 12,
                                   color: AppColors.ink,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                _done ? "Redirecting to checkout" : "Please wait a moment",
+                                style: AppText.subtle().copyWith(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink.withOpacity(0.55),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: AppColors.primary.withOpacity(0.10),
+                            border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                          ),
+                          child: Text(
+                            "Done",
+                            style: AppText.kicker().copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1883,9 +1672,7 @@ class _AddedToCartBottomSheetState extends State<_AddedToCartBottomSheet>
 }
 
 /// ---------------------------------------------------------------------------
-/// Local shadows fallback (so this file compiles without importing app_shadows).
-/// If you already have AppShadows in your theme, you can delete this class and
-/// replace `_S.*` with your `AppShadows.*`.
+/// Local shadows fallback
 /// ---------------------------------------------------------------------------
 class _S {
   static List<BoxShadow> get shadowSm => [
@@ -1918,12 +1705,6 @@ class _S {
       blurRadius: 28,
       offset: const Offset(0, 18),
     ),
-    BoxShadow(
-      color: Colors.white.withOpacity(0.70),
-      blurRadius: 16,
-      offset: const Offset(0, -10),
-      spreadRadius: -10,
-    ),
   ];
 
   static List<BoxShadow> get shadowCard => [
@@ -1932,24 +1713,13 @@ class _S {
       blurRadius: 18,
       offset: const Offset(0, 12),
     ),
-    BoxShadow(
-      color: Colors.white.withOpacity(0.75),
-      blurRadius: 12,
-      offset: const Offset(0, -6),
-      spreadRadius: -6,
-    ),
   ];
 
   static List<BoxShadow> get shadowTopBar => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.06),
+      color: Colors.black.withOpacity(0.08),
       blurRadius: 18,
       offset: const Offset(0, 12),
-    ),
-    BoxShadow(
-      color: AppColors.secondary.withOpacity(0.08),
-      blurRadius: 22,
-      offset: const Offset(0, 10),
     ),
   ];
 
@@ -1967,17 +1737,6 @@ class _S {
       blurRadius: 34,
       offset: const Offset(0, 22),
     ),
-    BoxShadow(
-      color: AppColors.secondary.withOpacity(0.10),
-      blurRadius: 28,
-      offset: const Offset(0, 18),
-    ),
-    BoxShadow(
-      color: Colors.white.withOpacity(0.75),
-      blurRadius: 18,
-      offset: const Offset(0, -10),
-      spreadRadius: -12,
-    ),
   ];
 
   static List<BoxShadow> get shadowCtaBtnEnabled => [
@@ -1991,12 +1750,6 @@ class _S {
       blurRadius: 28,
       offset: const Offset(0, 16),
       spreadRadius: -10,
-    ),
-    BoxShadow(
-      color: AppColors.other.withOpacity(0.10),
-      blurRadius: 28,
-      offset: const Offset(0, 16),
-      spreadRadius: -12,
     ),
   ];
 
@@ -2022,12 +1775,6 @@ class _S {
       blurRadius: 16,
       offset: const Offset(0, 12),
     ),
-    BoxShadow(
-      color: Colors.white.withOpacity(0.70),
-      blurRadius: 14,
-      offset: const Offset(0, -8),
-      spreadRadius: -10,
-    ),
   ];
 
   static List<BoxShadow> get shadowSheet => [
@@ -2035,17 +1782,6 @@ class _S {
       color: Colors.black.withOpacity(0.16),
       blurRadius: 40,
       offset: const Offset(0, 24),
-    ),
-    BoxShadow(
-      color: AppColors.secondary.withOpacity(0.10),
-      blurRadius: 28,
-      offset: const Offset(0, 18),
-    ),
-    BoxShadow(
-      color: Colors.white.withOpacity(0.86),
-      blurRadius: 26,
-      offset: const Offset(0, -14),
-      spreadRadius: -14,
     ),
   ];
 }

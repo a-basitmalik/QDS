@@ -19,6 +19,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+  // ─────────────────────────────────────────────────────────────
+  // THEME REDS (from your palette)
+  // ─────────────────────────────────────────────────────────────
+  static const Color _mahogany = Color(0xFF440C08);
+  static const Color _blood = Color(0xFF750A03);
+  static const Color _cherry = Color(0xFF9B0F03);
+  static const Color _red = Color(0xFFD1322E);
+
   // Controllers
   late final AnimationController _introController;
   late final AnimationController _loginController;
@@ -158,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   // ─────────────────────────────────────────────────────────────
-  // INTRO ANIMS (EXACT from your standalone)
+  // INTRO ANIMS
   // ─────────────────────────────────────────────────────────────
   void _setupIntroAnimations() {
     _introOverallFadeIn = CurvedAnimation(
@@ -371,7 +379,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     height: 170 + topInset,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.60),
-                      border: Border(bottom: BorderSide(color: AppColors.divider, width: 1)),
+                      border: Border(bottom: BorderSide(color: AppColors.borderBase(0.65), width: 1)),
                       boxShadow: AppShadows.topCap,
                     ),
                   ),
@@ -402,6 +410,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           opacity: introFade,
           child: Center(
             child: _NexoraFullLockup(
+              mahogany: _mahogany,
+              blood: _blood,
+              cherry: _cherry,
+              red: _red,
               letters: _letters,
               typedTagline: typed,
               iconScale: _introIconScale.value,
@@ -439,21 +451,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
                     child: Row(
                       children: [
-                        // brand icon card (no theme gradients required)
+                        // ✅ LOGO BOX (WHITE)
                         Container(
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            gradient: const LinearGradient(
-                              begin: Alignment(-1, -1),
-                              end: Alignment(1, 1),
-                              colors: [Color(0xFF5B7CFA), Color(0xFF8A5CFF)],
+                            borderRadius: AppRadius.r14,
+                            color: Colors.white, // ✅ changed from red gradient to white
+                            border: Border.all(
+                              color: _red.withOpacity(0.22), // subtle theme border
+                              width: 1,
                             ),
-                            border: Border.all(color: Colors.white.withOpacity(0.35)),
-                            boxShadow: const [
-                              BoxShadow(color: Color(0x1A000000), blurRadius: 22, offset: Offset(0, 16)),
-                              BoxShadow(color: Color(0x0C000000), blurRadius: 2, offset: Offset(0, 1)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 18,
+                                offset: const Offset(0, 12),
+                              ),
+                              BoxShadow(
+                                color: _red.withOpacity(0.06),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
                             ],
                           ),
                           child: const Padding(
@@ -461,6 +480,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             child: _LogoAssetOrFallback(size: 28),
                           ),
                         ),
+
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -472,7 +492,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 style: GoogleFonts.manrope(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.textDark,
+                                  color: AppColors.ink,
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -484,7 +504,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textMid,
+                                  color: AppColors.muted,
                                 ),
                               ),
                             ],
@@ -495,6 +515,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   ),
                 ),
               ),
+
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -530,13 +551,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         );
       },
     );
   }
+
 
   Widget _buildLoginCard() {
     return Column(
@@ -561,7 +583,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             onPressed: () => setState(() => obscure = !obscure),
             icon: Icon(
               obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-              color: AppColors.textMid,
+              color: AppColors.muted,
               size: 20,
             ),
             splashRadius: 18,
@@ -575,46 +597,45 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             TextButton(
               onPressed: () {},
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textDark,
+                foregroundColor: AppColors.ink,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               ),
-              child: const Text(
-                "Forgot password?",
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
+              child: const Text("Forgot password?", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
         const SizedBox(height: 10),
+
+        // ✅ Sign in button now uses your theme reds
         _Shiny3DButton(
           controller: _btnCtrl,
           pressT: _btnPress,
           text: "Sign in",
+          mahogany: _mahogany,
+          blood: _blood,
+          cherry: _cherry,
+          red: _red,
           onPressed: () async {
             await _btnCtrl.forward();
             await _btnCtrl.reverse();
             _handleSignIn();
           },
         ),
+
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               "Don't have an account?",
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textMid,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w600),
             ),
-
             TextButton(
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
               },
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textDark,
+                foregroundColor: AppColors.ink,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: const Text("Create one", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
@@ -628,29 +649,24 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget _buildRememberToggle() {
     return InkWell(
       onTap: () => setState(() => remember = !remember),
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppRadius.pill(),
       child: Row(
         children: [
           Container(
             width: 18,
             height: 18,
             decoration: BoxDecoration(
-              color: remember ? AppColors.textDark : Colors.transparent,
+              color: remember ? AppColors.ink : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.divider),
+              border: Border.all(color: AppColors.borderBase(0.65)),
             ),
             child: remember ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
           ),
           const SizedBox(width: 10),
           Text(
             "Remember me",
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.muted, // or AppColors.textMid if you use that
-            ),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.muted),
           ),
-
         ],
       ),
     );
@@ -679,7 +695,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               fontSize: 12.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,
-              color: isFocused ? AppColors.textDark : AppColors.textMid,
+              color: isFocused ? AppColors.ink : AppColors.muted,
             ),
             child: Text(label),
           ),
@@ -689,15 +705,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.55),
-            borderRadius: AppRadius.r18,
+            borderRadius: AppRadius.r18, // ✅ no BorderRadius.circular(AppRadius.r18)
             border: Border.all(
-              color: isFocused ? const Color(0xFF6B7CFF).withOpacity(0.55) : AppColors.divider,
+              color: isFocused ? _red.withOpacity(0.55) : AppColors.borderBase(0.60),
               width: isFocused ? 1.3 : 1.0,
             ),
             boxShadow: isFocused
                 ? [
               BoxShadow(
-                color: const Color(0xFF6B7CFF).withOpacity(0.18),
+                color: _red.withOpacity(0.16),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               )
@@ -711,7 +727,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               child: Row(
                 children: [
                   const SizedBox(width: 14),
-                  Icon(prefixIcon, size: 18, color: isFocused ? AppColors.textDark : AppColors.textMid),
+                  Icon(prefixIcon, size: 18, color: isFocused ? AppColors.ink : AppColors.muted),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
@@ -719,21 +735,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       controller: controller,
                       keyboardType: keyboardType,
                       obscureText: obscureText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
-
-
-                      decoration: const InputDecoration(
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.ink),
+                      decoration: InputDecoration(
                         border: InputBorder.none,
-                        hintStyle: TextStyle(
+                        hintText: hint,
+                        hintStyle: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFB0B0B6),
                         ),
-                      ).copyWith(hintText: hint),
+                      ),
                     ),
                   ),
                   if (suffix != null) suffix,
@@ -785,33 +796,38 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 }
 
 /// ─────────────────────────────────────────────────────────────
-/// Background (clean premium blobs like standalone)
+/// Background (light + subtle red blobs)
 /// ─────────────────────────────────────────────────────────────
 class NexoraBackground extends StatelessWidget {
   final Widget child;
   const NexoraBackground({super.key, required this.child});
+
+  static const Color _mahogany = Color(0xFF440C08);
+  static const Color _blood = Color(0xFF750A03);
+  static const Color _cherry = Color(0xFF9B0F03);
+  static const Color _red = Color(0xFFD1322E);
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Container(color: AppColors.bg),
-        const _RadialLayer(
-          alignment: Alignment(-0.65, -0.85),
+        _RadialLayer(
+          alignment: const Alignment(-0.65, -0.85),
           size: 1100,
-          color: Color(0xBFEAF1FF),
+          color: _red.withOpacity(0.12),
           stop: 0.65,
         ),
-        const _RadialLayer(
-          alignment: Alignment(0.85, -0.85),
+        _RadialLayer(
+          alignment: const Alignment(0.85, -0.85),
           size: 900,
-          color: Color(0xCFEFE3FF),
+          color: _cherry.withOpacity(0.10),
           stop: 0.62,
         ),
-        const _RadialLayer(
-          alignment: Alignment(0.0, 0.95),
+        _RadialLayer(
+          alignment: const Alignment(0.0, 0.95),
           size: 1100,
-          color: Color(0xCFF2E9FF),
+          color: _blood.withOpacity(0.10),
           stop: 0.68,
         ),
         Positioned.fill(
@@ -867,11 +883,11 @@ class _RadialLayer extends StatelessWidget {
 }
 
 /// ─────────────────────────────────────────────────────────────
-/// Glass + Card
+/// Glass (now accepts BorderRadius)
 /// ─────────────────────────────────────────────────────────────
 class Glass extends StatelessWidget {
   final Widget child;
-  final double radius;
+  final BorderRadius borderRadius;
   final EdgeInsets padding;
   final Color background;
   final double blur;
@@ -881,7 +897,7 @@ class Glass extends StatelessWidget {
   const Glass({
     super.key,
     required this.child,
-    required this.radius,
+    required this.borderRadius,
     required this.padding,
     required this.background,
     required this.blur,
@@ -894,17 +910,17 @@ class Glass extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         boxShadow: shadows,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: borderRadius,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: borderRadius,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: borderRadius,
               border: border,
             ),
             child: child,
@@ -927,7 +943,7 @@ class _GlassCard extends StatelessWidget {
     return Transform.translate(
       offset: Offset(0, floatY),
       child: Glass(
-        radius: AppRadius.d22,
+        borderRadius: AppRadius.r22,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
         background: Colors.white.withOpacity(0.72),
         blur: 18,
@@ -943,7 +959,7 @@ class _GlassCard extends StatelessWidget {
 }
 
 /// ─────────────────────────────────────────────────────────────
-/// Button + Titles
+/// Button + Titles (theme reds)
 /// ─────────────────────────────────────────────────────────────
 class _Shiny3DButton extends StatelessWidget {
   final AnimationController controller;
@@ -951,11 +967,17 @@ class _Shiny3DButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
 
+  final Color mahogany, blood, cherry, red;
+
   const _Shiny3DButton({
     required this.controller,
     required this.pressT,
     required this.text,
     required this.onPressed,
+    required this.mahogany,
+    required this.blood,
+    required this.cherry,
+    required this.red,
   });
 
   @override
@@ -980,23 +1002,24 @@ class _Shiny3DButton extends StatelessWidget {
               child: Container(
                 height: 54,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    begin: Alignment(-1, -1),
-                    end: Alignment(1, 1),
-                    colors: [Color(0xFF5B7CFA), Color(0xFF8A5CFF), Color(0xFF62F6C8)],
+                  borderRadius: AppRadius.r18,
+                  gradient: LinearGradient(
+                    begin: const Alignment(-1, -1),
+                    end: const Alignment(1, 1),
+                    colors: [mahogany, blood, red],
+                    stops: const [0.0, 0.58, 1.0],
                   ),
-                  border: Border.all(color: const Color(0x405B7CFA)),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 22, offset: Offset(0, 16)),
-                    BoxShadow(color: Color(0x0C000000), blurRadius: 2, offset: Offset(0, 1)),
+                  border: Border.all(color: cherry.withOpacity(0.35)),
+                  boxShadow: [
+                    BoxShadow(color: mahogany.withOpacity(0.20), blurRadius: 26, offset: const Offset(0, 18)),
+                    BoxShadow(color: red.withOpacity(0.10), blurRadius: 2, offset: const Offset(0, 1)),
                   ],
                 ),
                 child: Stack(
                   children: [
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppRadius.r18,
                         child: Opacity(
                           opacity: 0.75,
                           child: Transform.translate(
@@ -1005,12 +1028,12 @@ class _Shiny3DButton extends StatelessWidget {
                               0,
                             ),
                             child: Container(
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: RadialGradient(
-                                  center: Alignment(-0.6, -0.4),
+                                  center: const Alignment(-0.6, -0.4),
                                   radius: 0.9,
-                                  colors: [Color(0x52FFFFFF), Color(0x00FFFFFF)],
-                                  stops: [0.0, 0.55],
+                                  colors: [red.withOpacity(0.35), Colors.transparent],
+                                  stops: const [0.0, 0.55],
                                 ),
                               ),
                             ),
@@ -1044,6 +1067,8 @@ class _WelcomeSimpleTitle extends StatelessWidget {
   final String text;
   const _WelcomeSimpleTitle({required this.text});
 
+  static const Color _red = Color(0xFFD1322E);
+
   @override
   Widget build(BuildContext context) {
     return Text(
@@ -1053,12 +1078,12 @@ class _WelcomeSimpleTitle extends StatelessWidget {
         fontSize: 28,
         fontWeight: FontWeight.w900,
         letterSpacing: 0.2,
-        color: AppColors.textDark,
+        color: AppColors.ink,
         shadows: [
           Shadow(
             blurRadius: 16,
             offset: const Offset(0, 10),
-            color: const Color(0xFF8A5CFF).withOpacity(0.14),
+            color: _red.withOpacity(0.12),
           ),
         ],
       ),
@@ -1075,15 +1100,17 @@ class _LogoAssetOrFallback extends StatelessWidget {
     return Image.asset(
       "assets/logo.png",
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Icon(Icons.auto_awesome_rounded, color: Colors.white, size: size),
+      errorBuilder: (_, __, ___) => Icon(Icons.auto_awesome_rounded, color: const Color(0xFFD1322E), size: size),
     );
   }
 }
 
 /// ─────────────────────────────────────────────────────────────
-/// INTRO LOCKUP (exact animation)
+/// INTRO LOCKUP (holo gradient = theme reds)
 /// ─────────────────────────────────────────────────────────────
 class _NexoraFullLockup extends StatelessWidget {
+  final Color mahogany, blood, cherry, red;
+
   final List<_LetterAnim> letters;
   final String typedTagline;
   final double iconScale;
@@ -1101,6 +1128,10 @@ class _NexoraFullLockup extends StatelessWidget {
   final double logoSlideX;
 
   const _NexoraFullLockup({
+    required this.mahogany,
+    required this.blood,
+    required this.cherry,
+    required this.red,
     required this.letters,
     required this.typedTagline,
     required this.iconScale,
@@ -1122,8 +1153,7 @@ class _NexoraFullLockup extends StatelessWidget {
       final h = c.maxHeight;
       final bool isTight = w < 520;
 
-      final double logoSize =
-      isTight ? (w * 0.36).clamp(150.0, 205.0) : (w * 0.22).clamp(190.0, 280.0);
+      final double logoSize = isTight ? (w * 0.36).clamp(150.0, 205.0) : (w * 0.22).clamp(190.0, 280.0);
 
       final double brandScaleBoost = isTight ? 1.06 : 1.18;
       final double maxLockupWidth = isTight ? min(w - 32, 560) : min(w - 40, 980);
@@ -1157,6 +1187,10 @@ class _NexoraFullLockup extends StatelessWidget {
       );
 
       Widget word = _HoloGlassBrandWord(
+        mahogany: mahogany,
+        blood: blood,
+        cherry: cherry,
+        red: red,
         letters: letters,
         scaleBoost: brandScaleBoost,
         holoT: holoT,
@@ -1255,6 +1289,8 @@ class _LetterAnim {
 }
 
 class _HoloGlassBrandWord extends StatelessWidget {
+  final Color mahogany, blood, cherry, red;
+
   final List<_LetterAnim> letters;
   final double scaleBoost;
   final double holoT;
@@ -1262,6 +1298,10 @@ class _HoloGlassBrandWord extends StatelessWidget {
   final bool tight;
 
   const _HoloGlassBrandWord({
+    required this.mahogany,
+    required this.blood,
+    required this.cherry,
+    required this.red,
     required this.letters,
     required this.scaleBoost,
     required this.holoT,
@@ -1294,7 +1334,7 @@ class _HoloGlassBrandWord extends StatelessWidget {
                       height: 0.92,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -1.3,
-                      color: const Color(0xFF8A5CFF).withOpacity(0.28),
+                      color: red.withOpacity(0.18),
                     ),
                     useHoloPaint: false,
                     holoPaint: null,
@@ -1311,7 +1351,7 @@ class _HoloGlassBrandWord extends StatelessWidget {
               height: 0.92,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.3,
-              color: AppColors.textDark.withOpacity(0.88),
+              color: AppColors.ink.withOpacity(0.88),
             ),
             useHoloPaint: false,
             holoPaint: null,
@@ -1323,17 +1363,11 @@ class _HoloGlassBrandWord extends StatelessWidget {
               final begin = Alignment(shimmerX, -0.9 + shimmerY);
               final end = Alignment(-shimmerX, 0.9 - shimmerY);
 
-              // FIX: no LinearGradient.copyWith (doesn't exist)
               return LinearGradient(
                 begin: begin,
                 end: end,
-                colors: const [
-                  Color(0xFF5B7CFA),
-                  Color(0xFF8A5CFF),
-                  Color(0xFF62F6C8),
-                  Color(0xFFB9C7FF),
-                ],
-                stops: const [0.0, 0.35, 0.68, 1.0],
+                colors: [red, cherry, blood, mahogany],
+                stops: const [0.0, 0.35, 0.70, 1.0],
               ).createShader(rect);
             },
             child: _BrandWord(
@@ -1366,7 +1400,7 @@ class _HoloGlassBrandWord extends StatelessWidget {
                         gradient: LinearGradient(
                           colors: [
                             Colors.white.withOpacity(0.0),
-                            Colors.white.withOpacity(0.55),
+                            red.withOpacity(0.25),
                             Colors.white.withOpacity(0.0),
                           ],
                           stops: const [0.2, 0.5, 0.8],
@@ -1527,7 +1561,7 @@ class _TaglineTypedText extends StatelessWidget {
         fontSize: fontSize,
         height: 1.2,
         fontWeight: FontWeight.w700,
-        color: AppColors.textMid,
+        color: AppColors.muted,
       ),
     );
   }

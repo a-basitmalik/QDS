@@ -12,10 +12,10 @@ import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 
 /// ✅ SHOP SCREEN — Aligned with YOUR theme
-/// - No hover-only behavior
-/// - Press/click zoom + glow (mobile + web)
-/// - Keeps ambient animations + entrance + focus zoom
-/// - Uses AppColors/AppRadius/AppShadows/AppText ONLY
+/// Updates requested:
+/// ✅ Remove heading at top (shopName title removed)
+/// ✅ Back + Share buttons themed red
+/// ✅ Glass cards have subtle reddish theme tint/glow
 class ShopScreen extends StatefulWidget {
   final String shopName;
 
@@ -218,7 +218,8 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   }
 
   // ───────────────────────── Top mini header ─────────────────────────
-
+  // ✅ Removed shop-name heading
+  // ✅ Back + Share buttons are themed red
   Widget _topMiniHeader(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
 
@@ -228,51 +229,49 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
       right: 14,
       child: Row(
         children: [
+          // ✅ Themed red back button
           _PressGlowScale(
             onTap: () => Navigator.pop(context),
             borderRadius: BorderRadius.circular(999),
-            glowColor: AppColors.secondary.withOpacity(0.16),
+            glowColor: AppColors.primary.withOpacity(0.18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.55),
+                gradient: AppColors.brandLinear,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.borderBase(0.85)),
+                border: Border.all(color: Colors.white.withOpacity(0.18)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_back_rounded, size: 18, color: AppColors.ink),
+                  const Icon(Icons.arrow_back_rounded, size: 18, color: Colors.white),
                   const SizedBox(width: 8),
                   Text(
                     "Back",
                     style: GoogleFonts.manrope(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.ink,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Center(
-              child: _Welcome3DTitleCentered(
-                text: widget.shopName.toUpperCase(),
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
+
+          // ✅ keep layout balanced since we removed the center heading
+          const Spacer(),
+
+          // ✅ Themed red share puck
           _PressGlowScale(
             onTap: () {},
-            glowColor: AppColors.other.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(18),
+            glowColor: AppColors.primary.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(999),
             child: _GlassIconPuck(
               icon: Icons.share_outlined,
               onTap: () {},
+              darkPuck: true, // now themed red puck (see _GlassIconPuck)
+              iconColor: Colors.white,
             ),
           ),
         ],
@@ -472,7 +471,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             onTap: onAction,
             downScale: 0.96,
             borderRadius: BorderRadius.circular(999),
-            glowColor: AppColors.secondary.withOpacity(0.12),
+            glowColor: AppColors.primary.withOpacity(0.12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Text(
@@ -559,15 +558,13 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               color: Colors.white.withOpacity(focused ? 0.64 : 0.56),
               borderRadius: AppRadius.r18,
               border: Border.all(
-                color: focused
-                    ? AppColors.secondary.withOpacity(0.38)
-                    : AppColors.borderBase(0.85),
+                color: focused ? AppColors.primary.withOpacity(0.34) : AppColors.borderBase(0.85),
                 width: focused ? 1.2 : 1.0,
               ),
               boxShadow: focused
                   ? [
                 BoxShadow(
-                  color: AppColors.secondary.withOpacity(0.12),
+                  color: AppColors.primary.withOpacity(0.12),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 )
@@ -608,11 +605,13 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                 _PressGlowScale(
                   onTap: () {},
                   downScale: 0.94,
-                  glowColor: AppColors.secondary.withOpacity(0.14),
+                  glowColor: AppColors.primary.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(999),
                   child: _GlassIconPuck(
                     icon: Icons.tune_rounded,
                     onTap: () {},
+                    darkPuck: true,
+                    iconColor: Colors.white,
                   ),
                 ),
               ],
@@ -643,9 +642,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                 setState(() => selectedCategory = i);
               },
               downScale: 0.965,
-              glowColor: active
-                  ? AppColors.secondary.withOpacity(0.16)
-                  : AppColors.secondary.withOpacity(0.08),
+              glowColor: active ? AppColors.primary.withOpacity(0.18) : AppColors.primary.withOpacity(0.08),
               borderRadius: AppRadius.r22,
               child: ClipRRect(
                 borderRadius: AppRadius.r22,
@@ -668,9 +665,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                         ],
                       ),
                       border: Border.all(
-                        color: active
-                            ? Colors.white.withOpacity(0.22)
-                            : AppColors.borderBase(0.85),
+                        color: active ? Colors.white.withOpacity(0.22) : AppColors.borderBase(0.85),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -720,18 +715,12 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 
   Widget _productCard(BuildContext context, int index) {
     final items = const [
-      ("Classic Watch", "Rs. 4,999",
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30"),
-      ("Urban Hoodie", "Rs. 3,499",
-      "https://images.unsplash.com/photo-1520975958225-9e2e7f1b7a0a"),
-      ("Leather Wallet", "Rs. 1,299",
-      "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3"),
-      ("Sneakers Pro", "Rs. 6,799",
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff"),
-      ("Denim Jacket", "Rs. 5,999",
-      "https://images.unsplash.com/photo-1520975682311-781b54b85f34"),
-      ("Minimal Backpack", "Rs. 2,899",
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff"),
+      ("Classic Watch", "Rs. 4,999", "https://images.unsplash.com/photo-1523275335684-37898b6baf30"),
+      ("Urban Hoodie", "Rs. 3,499", "https://images.unsplash.com/photo-1520975958225-9e2e7f1b7a0a"),
+      ("Leather Wallet", "Rs. 1,299", "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3"),
+      ("Sneakers Pro", "Rs. 6,799", "https://images.unsplash.com/photo-1542291026-7eec264c27ff"),
+      ("Denim Jacket", "Rs. 5,999", "https://images.unsplash.com/photo-1520975682311-781b54b85f34"),
+      ("Minimal Backpack", "Rs. 2,899", "https://images.unsplash.com/photo-1542291026-7eec264c27ff"),
     ];
 
     final p = items[index % items.length];
@@ -749,7 +738,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
         );
       },
       downScale: 0.975,
-      glowColor: AppColors.secondary.withOpacity(0.12),
+      glowColor: AppColors.primary.withOpacity(0.12),
       borderRadius: AppRadius.r18,
       child: ClipRRect(
         borderRadius: AppRadius.r18,
@@ -760,7 +749,14 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               color: Colors.white.withOpacity(0.58),
               borderRadius: AppRadius.r18,
               border: Border.all(color: AppColors.borderBase(0.85)),
-              boxShadow: AppShadows.soft,
+              boxShadow: [
+                ...AppShadows.soft,
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,11 +786,13 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                           child: _PressGlowScale(
                             onTap: () {},
                             downScale: 0.94,
-                            glowColor: AppColors.other.withOpacity(0.12),
+                            glowColor: AppColors.primary.withOpacity(0.14),
                             borderRadius: BorderRadius.circular(999),
                             child: _GlassIconPuck(
                               icon: Icons.add_rounded,
                               onTap: () {},
+                              darkPuck: true,
+                              iconColor: Colors.white,
                             ),
                           ),
                         ),
@@ -887,7 +885,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               child: _PressGlowScale(
                 onTap: () {},
                 downScale: 0.96,
-                glowColor: AppColors.secondary.withOpacity(0.12),
+                glowColor: AppColors.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(999),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1107,15 +1105,24 @@ class _GlassCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: AppRadius.r18,
               border: Border.all(color: AppColors.borderBase(0.85)),
+              // ✅ subtle reddish tint
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.70),
-                  Colors.white.withOpacity(0.46),
+                  AppColors.primary.withOpacity(0.08),
+                  Colors.white.withOpacity(0.62),
                 ],
               ),
-              boxShadow: AppShadows.soft,
+              // ✅ red glow + your soft shadows
+              boxShadow: [
+                ...AppShadows.soft,
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.10),
+                  blurRadius: 22,
+                  offset: const Offset(0, 14),
+                ),
+              ],
             ),
             child: Stack(
               children: [
@@ -1128,8 +1135,8 @@ class _GlassCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withOpacity(0.55),
-                            Colors.white.withOpacity(0.08),
+                            Colors.white.withOpacity(0.50),
+                            AppColors.primary.withOpacity(0.08),
                             Colors.transparent,
                           ],
                           stops: const [0.0, 0.45, 1.0],
@@ -1219,16 +1226,17 @@ class _GlassIconPuckState extends State<_GlassIconPuck> {
     final active = _press;
     final scale = _press ? 0.96 : 1.0;
 
+    // ✅ themed red puck when darkPuck=true
     final bg = widget.darkPuck
-        ? AppColors.ink.withOpacity(active ? 0.55 : 0.42)
+        ? AppColors.primary.withOpacity(active ? 0.92 : 0.82)
         : Colors.white.withOpacity(active ? 0.70 : 0.58);
 
     final border = widget.darkPuck
-        ? Colors.white.withOpacity(active ? 0.55 : 0.40)
+        ? Colors.white.withOpacity(active ? 0.25 : 0.18)
         : AppColors.borderBase(active ? 0.95 : 0.85);
 
-    final iconColor = widget.iconColor ??
-        (widget.darkPuck ? Colors.white : AppColors.ink.withOpacity(0.75));
+    final iconColor =
+        widget.iconColor ?? (widget.darkPuck ? Colors.white : AppColors.ink.withOpacity(0.75));
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1267,62 +1275,6 @@ class _GlassIconPuckState extends State<_GlassIconPuck> {
   }
 }
 
-class _Welcome3DTitleCentered extends StatelessWidget {
-  final String text;
-  final double fontSize;
-  const _Welcome3DTitleCentered({required this.text, this.fontSize = 22});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        for (int i = 10; i >= 1; i--)
-          Transform.translate(
-            offset: Offset(0, i.toDouble() * 0.9),
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.manrope(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.6,
-                color: Colors.black.withOpacity(0.055),
-              ),
-            ),
-          ),
-        ShaderMask(
-          shaderCallback: (rect) => AppColors.brandLinear.createShader(rect),
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.6,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                  color: AppColors.secondary.withOpacity(0.14),
-                ),
-                Shadow(
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                  color: Colors.black.withOpacity(0.10),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _Avatar3D extends StatelessWidget {
   final String letter;
   final double size;
@@ -1337,7 +1289,14 @@ class _Avatar3D extends StatelessWidget {
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.70),
         border: Border.all(color: AppColors.borderBase(0.85)),
-        boxShadow: AppShadows.soft,
+        boxShadow: [
+          ...AppShadows.soft,
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       alignment: Alignment.center,
       child: Text(
@@ -1401,7 +1360,7 @@ class _Shiny3DButton extends StatelessWidget {
                 gradient: AppColors.brandLinear,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
+                    color: AppColors.primary.withOpacity(0.18),
                     blurRadius: 18,
                     offset: Offset(0, 12 + press),
                   ),
