@@ -1,4 +1,3 @@
-// home.dart
 import 'dart:math';
 import 'dart:ui';
 import 'dart:ui' as ui;
@@ -15,36 +14,8 @@ import 'package:qds/screens/Customer/profile_screen.dart';
 import 'package:qds/screens/Customer/shop_listing_screen.dart';
 import 'package:qds/screens/Customer/shop_screen.dart';
 import 'package:qds/screens/Customer/ai_outfit/ai_outfit.dart';
-/// ✅ Updated Home UI (routing/functionality preserved)
-/// ✅ LIGHT THEME + your palette:
-/// primary   #440C08
-/// secondary #750A03
-/// others    (invalid "9BOS03") -> using fallback #9B0F03
-///
-/// ✅ Added:
-/// - Futuristic animated AI Outfit button (center bottom)
-/// - Brand/category picker popup (can be left empty)
-/// - AI loading animation
-/// - 5 outfits results with Next + Generate 5 new
-/// - "Try this outfit" -> AR-2D try-on screen with product list + Add to cart + View details
-///
-/// ⚠️ Assets:
-/// flutter:
-///   assets:
-///     - assets/banners/
-///     - assets/articles/
-///     - assets/shops/
-///     - assets/logos/
-// ✅ Replace FAB overlay with a FULL AI SECTION (electric border fill + beating heart + smoke)
-// ✅ Keep your existing AI flow (picker → generating dialog → results) intact
-//
-// What you’ll do:
-// 1) Remove AiOutfitFabOverlay(...) from your HomeScreen Stack.
-// 2) Add the AiOutfitSection(...) widget in your scroll body where you want the AI section.
-// 3) Keep your onTap logic exactly the same (moved into _openAiFlow()).
-//
-// NOTE: This code is self-contained and “modular”: you can edit only AiOutfitSection
-// later to improve visuals without touching the rest.
+import 'package:qds/screens/Customer/wardrobe/wardrobe_interior_screen.dart';
+
 
 
 class HomeScreen extends StatefulWidget {
@@ -53,6 +24,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 class ShopCardData {
   final String name;
   final String meta;
@@ -70,6 +42,7 @@ class ShopCardData {
     this.pro,
   });
 }
+
 class CardMedia {
   final String bg;
   const CardMedia({required this.bg});
@@ -106,25 +79,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   static const _bg3 = Color(0xFFFFFFFF);
   static const _ink = Color(0xFF140504);
 
-  TextStyle _subtle() =>
-      GoogleFonts.manrope(
-        fontSize: 12.6,
-        fontWeight: FontWeight.w700,
-        height: 1.22,
-        color: _ink.withOpacity(0.55),
-      );
+  TextStyle _subtle() => GoogleFonts.manrope(
+    fontSize: 12.6,
+    fontWeight: FontWeight.w700,
+    height: 1.22,
+    color: _ink.withOpacity(0.55),
+  );
 
   @override
   void initState() {
     super.initState();
 
     _ambientCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 5600))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 5600),
+    )..repeat(reverse: true);
 
     _bgT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOut);
-    _floatT =
-        CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
+    _floatT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
 
     _selectedLocation ??= const SelectedLocation(
       label: "Current location",
@@ -146,12 +118,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          AiOutfitPickerSheet(
-            primary: _primary,
-            secondary: _secondary,
-            ink: _ink,
-          ),
+      builder: (_) => AiOutfitPickerSheet(
+        primary: _primary,
+        secondary: _secondary,
+        ink: _ink,
+      ),
     );
 
     if (!mounted || prefs == null) return;
@@ -159,14 +130,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final outfits = await showDialog<List<OutfitBundle>>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          AiGeneratingDialog(
-            primary: _primary,
-            secondary: _secondary,
-            other: _other,
-            ink: _ink,
-            prefs: prefs,
-          ),
+      builder: (_) => AiGeneratingDialog(
+        primary: _primary,
+        secondary: _secondary,
+        other: _other,
+        ink: _ink,
+        prefs: prefs,
+      ),
     );
 
     if (!mounted || outfits == null || outfits.isEmpty) return;
@@ -174,30 +144,172 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            AiOutfitResultsScreen(
-              primary: _primary,
-              secondary: _secondary,
-              other: _other,
-              ink: _ink,
-              initialOutfits: outfits,
-              prefs: prefs,
-              fullScreenGlassSheet: () => const _FullScreenGlassSheet(),
-              title3d: (text, {fontSize = 20, fontWeight = FontWeight.w900}) =>
-                  _Title3D(text, fontSize: fontSize, fontWeight: fontWeight),
-              imgBuilder: (image, {fit = BoxFit.cover}) =>
-                  _img(image, fit: fit),
+        builder: (_) => AiOutfitResultsScreen(
+          primary: _primary,
+          secondary: _secondary,
+          other: _other,
+          ink: _ink,
+          initialOutfits: outfits,
+          prefs: prefs,
+          fullScreenGlassSheet: () => const _FullScreenGlassSheet(),
+          title3d: (text, {fontSize = 20, fontWeight = FontWeight.w900}) =>
+              _Title3D(text, fontSize: fontSize, fontWeight: fontWeight),
+          imgBuilder: (image, {fit = BoxFit.cover}) => _img(image, fit: fit),
+        ),
+      ),
+    );
+  }
+
+// ✅ NEW: Wardrobe button route (opens WardrobeInteriorScreen)
+  void _openWardrobe() {
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 520),
+        pageBuilder: (_, __, ___) => const WardrobeInteriorScreen(),
+        transitionsBuilder: (_, anim, __, child) {
+          final a = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+          return FadeTransition(
+            opacity: a,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(a),
+              child: child,
             ),
+          );
+        },
+      ),
+    );
+  }
+
+
+  // ✅ NEW: Wardrobe button (Option 1 under search)
+  Widget _wardrobeButton(BuildContext context) {
+    final r = BorderRadius.circular(22);
+
+    return _PressScale(
+      downScale: 0.985,
+      borderRadius: r,
+      onTap: _openWardrobe,
+      child: ClipRRect(
+        borderRadius: r,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            decoration: BoxDecoration(
+              borderRadius: r,
+              color: Colors.white.withOpacity(0.70),
+              border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 22,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _secondary.withOpacity(0.95),
+                        _primary.withOpacity(0.95),
+                      ],
+                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.76), width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _secondary.withOpacity(0.22),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.calendar_today, color: Colors.white.withOpacity(0.95)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Wardrobe",
+                        style: GoogleFonts.manrope(
+                          fontSize: 14.6,
+                          fontWeight: FontWeight.w900,
+                          color: _ink.withOpacity(0.92),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Open your digital closet • set availability • generate outfits",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12.0,
+                          fontWeight: FontWeight.w800,
+                          color: _ink.withOpacity(0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _primary.withOpacity(0.10),
+                        _secondary.withOpacity(0.08),
+                      ],
+                    ),
+                    border: Border.all(color: _primary.withOpacity(0.18), width: 1.0),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 16, color: _primary.withOpacity(0.86)),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Open",
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11.8,
+                          color: _ink.withOpacity(0.82),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right_rounded, color: _ink.withOpacity(0.70)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery
-        .of(context)
-        .padding
-        .top;
+    final topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: _bg1,
@@ -255,8 +367,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           a: _other,
                           b: _secondary,
                         ),
-                        _ShimmerSweep(
-                            t: tt, colorA: _secondary, colorB: _primary),
+                        _ShimmerSweep(t: tt, colorA: _secondary, colorB: _primary),
                       ],
                     ),
                   ),
@@ -320,13 +431,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _body(BuildContext context) {
-    final topInset = MediaQuery
-        .of(context)
-        .padding
-        .top;
+    final topInset = MediaQuery.of(context).padding.top;
 
-    const promotedMedia = CardMedia(bg: "assets/banners/Edited.jpg");
-    const articleMedia = CardMedia(bg: "assets/articles/Edited.jpg");
     final nearbyMedia = const [
       CardMedia(bg: "assets/shops/Charcoal.png"),
       CardMedia(bg: "assets/shops/Monark.jpg"),
@@ -346,14 +452,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _topLocationRow(context),
               const SizedBox(height: 12),
               _searchRow(context),
+
+              // ✅ Option 1: Wardrobe button directly under search
+              const SizedBox(height: 12),
+              _wardrobeButton(context),
+
               const SizedBox(height: 14),
               _heroCard(context),
               const SizedBox(height: 18),
               _categoriesRow(context),
 
-              // ✅ NEW: Entire AI Section (instead of FAB)
-
-// ✅ NEW: Entire AI Section (instead of FAB)
               const SizedBox(height: 18),
               AiOutfitSection(
                 primary: _primary,
@@ -364,11 +472,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 22),
-
-              _sectionHeader("Spotlight Stores", "Featured brands near you",
-                  Icons.auto_awesome_rounded),
+              _sectionHeader("Spotlight Stores", "Featured brands near you", Icons.auto_awesome_rounded),
               const SizedBox(height: 12),
-
               _horizontalCards(
                 height: 210,
                 items: const [
@@ -405,13 +510,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
 
-
               const SizedBox(height: 22),
-
-              _sectionHeader("Trending Now", "Top Articles",
-                  Icons.local_fire_department_rounded),
+              _sectionHeader("Trending Now", "Top Articles", Icons.local_fire_department_rounded),
               const SizedBox(height: 12),
-
               _trendingCategoryCards(
                 height: 210,
                 items: const [
@@ -426,9 +527,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 22),
-
-              _sectionHeader(
-                  "Nearby Shops", "Fast near you", Icons.near_me_rounded),
+              _sectionHeader("Nearby Shops", "Fast near you", Icons.near_me_rounded),
               const SizedBox(height: 12),
               _nearbyShops(context, nearbyMedia),
 
@@ -457,11 +556,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               final result = await Navigator.push<SelectedLocation>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      LocationSelectScreen(
-                        current: _selectedLocation,
-                        saved: List.of(_savedLocations),
-                      ),
+                  builder: (_) => LocationSelectScreen(
+                    current: _selectedLocation,
+                    saved: List.of(_savedLocations),
+                  ),
                 ),
               );
 
@@ -521,8 +619,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.68),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: Colors.white.withOpacity(0.80), width: 1.1),
+            border: Border.all(color: Colors.white.withOpacity(0.80), width: 1.1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -596,8 +693,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(0.18), width: 1.1),
+                  border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.16),
@@ -640,8 +736,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 children: [
                                   const _GlassTagDark(text: "2-HOUR DELIVERY"),
                                   const Spacer(),
-                                  const _MiniGlassIconDark(
-                                      icon: Icons.bolt_rounded),
+                                  const _MiniGlassIconDark(icon: Icons.bolt_rounded),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -679,8 +774,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   _HeroPill(
                                     text: "Deals",
                                     filled: false,
-                                    onTap: () =>
-                                        HapticFeedback.selectionClick(),
+                                    onTap: () => HapticFeedback.selectionClick(),
                                   ),
                                 ],
                               ),
@@ -740,15 +834,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.66),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.82),
-                      width: 1.1,
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.1),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -806,11 +896,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // HORIZONTAL CARDS (Foodpanda-like)
-
+  // HORIZONTAL CARDS
   // ─────────────────────────────────────────────────────────────
-
-
   Widget _horizontalCards({
     required double height,
     required List<ShopCardData> items,
@@ -912,8 +999,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               HapticFeedback.lightImpact();
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (_) => ShopListingScreen(category: title)),
+                MaterialPageRoute(builder: (_) => ShopListingScreen(category: title)),
               );
             },
             child: _TopImageGlassFooterCard(
@@ -960,8 +1046,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.14), width: 1.0),
+                border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.0),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.22),
@@ -971,11 +1056,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center, // ✅ IMPORTANT
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(
-                      Icons.bolt_rounded, color: Colors.white.withOpacity(0.92),
-                      size: 20),
+                  Icon(Icons.bolt_rounded, color: Colors.white.withOpacity(0.92), size: 20),
                   const SizedBox(width: 10),
                   Text(
                     "Flash Deals",
@@ -987,38 +1070,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(width: 10),
-
-                  // ✅ FIX: fixed-height strip + centered list
                   Expanded(
                     child: Center(
                       child: SizedBox(
-                        height: 34, // ✅ keeps chips vertically centered
+                        height: 34,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           shrinkWrap: true,
                           itemCount: 6,
-                          separatorBuilder: (_, __) =>
-                          const SizedBox(width: 10),
-                          itemBuilder: (context, i) =>
-                              _DealChip(
-                                text: const [
-                                  "25% OFF",
-                                  "BOGO",
-                                  "Rs.199",
-                                  "1+1",
-                                  "Mega",
-                                  "Hot"
-                                ][i],
-                              ),
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (context, i) => _DealChip(
+                            text: const ["25% OFF", "BOGO", "Rs.199", "1+1", "Mega", "Hot"][i],
+                          ),
                         ),
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 8),
-
-                  // ✅ keep your View button as-is
                   _PressScale(
                     downScale: 0.98,
                     borderRadius: BorderRadius.circular(999),
@@ -1028,21 +1097,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         SnackBar(
                           content: Text(
                             "Flash deals opened",
-                            style: GoogleFonts.manrope(
-                                fontWeight: FontWeight.w800),
+                            style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.14),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white.withOpacity(
-                            0.16), width: 1),
+                        border: Border.all(color: Colors.white.withOpacity(0.16), width: 1),
                       ),
                       child: Text(
                         "View",
@@ -1063,6 +1129,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+// ============================================================================
+// ✅ Everything below is your existing widgets / helpers as-is (unchanged),
+// plus your AiOutfitSection + painters.
+// (Keeping it in one file, “completed updated screen” as requested)
+// ============================================================================
 
 // ─────────────────────────────────────────────────────────────
 // ✅ NEW CARD STYLE (matches screenshot)
@@ -1336,17 +1408,6 @@ class _GlassBadge extends StatelessWidget {
     );
   }
 }
-// ✅ Replace FAB overlay with a FULL AI SECTION (electric border fill + beating heart + smoke)
-// ✅ Keep your existing AI flow (picker → generating dialog → results) intact
-//
-// What you’ll do:
-// 1) Remove AiOutfitFabOverlay(...) from your HomeScreen Stack.
-// 2) Add the AiOutfitSection(...) widget in your scroll body where you want the AI section.
-// 3) Keep your onTap logic exactly the same (moved into _openAiFlow()).
-//
-// NOTE: This code is self-contained and “modular”: you can edit only AiOutfitSection
-// later to improve visuals without touching the rest.
-
 
 class _AdPill extends StatelessWidget {
   @override
@@ -1502,8 +1563,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Selected",
-                                style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+                            Text("Selected", style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
                             const SizedBox(height: 6),
                             Text(
                               "$_label • ${_center.latitude.toStringAsFixed(5)}, ${_center.longitude.toStringAsFixed(5)}",
@@ -1562,8 +1622,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Saved locations",
-                    style: GoogleFonts.manrope(fontWeight: FontWeight.w900, color: ink)),
+                Text("Saved locations", style: GoogleFonts.manrope(fontWeight: FontWeight.w900, color: ink)),
                 const SizedBox(height: 10),
                 SizedBox(
                   height: 70,
@@ -1621,7 +1680,7 @@ class SelectedLocation {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SMALL UI PARTS (your existing ones)
+// SMALL UI PARTS
 // ─────────────────────────────────────────────────────────────
 class _LocationPill extends StatelessWidget {
   final String label;
@@ -1651,8 +1710,7 @@ class _LocationPill extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.location_on_rounded,
-                  size: 18, color: const Color(0xFF440C08).withOpacity(0.85)),
+              Icon(Icons.location_on_rounded, size: 18, color: const Color(0xFF440C08).withOpacity(0.85)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -2379,7 +2437,7 @@ class _HeroPill extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Nearby card (unchanged)
+// Nearby card
 // ─────────────────────────────────────────────────────────────
 class _NearbyImageRowCard extends StatelessWidget {
   final String name;
@@ -2411,9 +2469,7 @@ class _NearbyImageRowCard extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: image == null
-                  ? Container(color: Colors.white.withOpacity(0.75))
-                  : _img(image!, fit: BoxFit.cover),
+              child: image == null ? Container(color: Colors.white.withOpacity(0.75)) : _img(image!, fit: BoxFit.cover),
             ),
             Positioned.fill(
               child: IgnorePointer(
@@ -2716,6 +2772,7 @@ class _ShimmerSweep extends StatelessWidget {
     );
   }
 }
+
 
 // ============================================================================
 // ✅ NEW: AI OUTFIT SECTION (MODULAR)
