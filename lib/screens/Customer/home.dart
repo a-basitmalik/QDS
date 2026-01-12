@@ -309,126 +309,287 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
-
     return Scaffold(
       backgroundColor: _bg1,
       bottomNavigationBar: _flashDealsBar(context),
-      body: Stack(
-        children: [
-          // Background
-          AnimatedBuilder(
-            animation: _ambientCtrl,
-            builder: (context, _) {
-              final t = _bgT.value;
-              final tt = _floatT.value;
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _mahoganySliverHeader(context),
 
-              return Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color.lerp(_bg3, _bg2, t)!,
-                          Color.lerp(_bg2, _bg1, t)!,
-                          Color.lerp(_bg3, _bg2, t)!,
-                        ],
-                        stops: const [0.0, 0.58, 1.0],
-                      ),
-                    ),
-                  ),
-                  const _FullScreenGlassSheet(),
-                  IgnorePointer(
-                    child: Stack(
-                      children: [
-                        _GlowBlob(
-                          dx: lerpDouble(-70, -18, tt)!,
-                          dy: lerpDouble(110, 80, tt)!,
-                          size: 300,
-                          opacity: 0.11,
-                          a: _secondary,
-                          b: _primary,
-                        ),
-                        _GlowBlob(
-                          dx: lerpDouble(220, 310, tt)!,
-                          dy: lerpDouble(290, 220, tt)!,
-                          size: 360,
-                          opacity: 0.09,
-                          a: _primary,
-                          b: _other,
-                        ),
-                        _GlowBlob(
-                          dx: lerpDouble(190, 250, 1 - tt)!,
-                          dy: lerpDouble(26, 14, tt)!,
-                          size: 260,
-                          opacity: 0.07,
-                          a: _other,
-                          b: _secondary,
-                        ),
-                        _ShimmerSweep(t: tt, colorA: _secondary, colorB: _primary),
-                      ],
-                    ),
-                  ),
-                  IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.center,
-                          colors: [
-                            Colors.white.withOpacity(0.70),
-                            Colors.white.withOpacity(0.20),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.45, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+          // Your page content (same widgets as before)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  // same content order as your old _body()
+                  _searchRow(context),
+                  const SizedBox(height: 12),
+                  _wardrobeButton(context),
 
-          // Top cap
-          Positioned(
-            top: -topInset,
-            left: 0,
-            right: 0,
-            child: ClipPath(
-              clipper: _HeaderCapClipper(),
-              child: Container(
-                height: 220 + topInset,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withOpacity(0.92),
-                      Colors.white.withOpacity(0.58),
-                      Colors.white.withOpacity(0.06),
+                  const SizedBox(height: 14),
+                  _heroCard(context),
+
+                  // const SizedBox(height: 18),
+                  _categoriesRow(context),
+
+                  // const SizedBox(height: 18),
+                  AiOutfitSection(
+                    primary: _primary,
+                    secondary: _secondary,
+                    other: _other,
+                    ink: _ink,
+                    onActivated: _openAiFlow,
+                  ),
+
+                  const SizedBox(height: 22),
+                  _sectionHeader("Spotlight Stores", "Featured brands near you", Icons.auto_awesome_rounded),
+                  const SizedBox(height: 12),
+                  _horizontalCards(
+                    height: 210,
+                    items: const [
+                      ShopCardData(
+                        name: "Charcoal",
+                        meta: "Men • Formalwear • Premium",
+                        image: "assets/shops/Charcoal.png",
+                        isAd: true,
+                        offer: "Flat 15% OFF",
+                        pro: "PRO • Free delivery over Rs.199",
+                      ),
+                      ShopCardData(
+                        name: "Outfitters",
+                        meta: "Men & Women • Casual • Trending",
+                        image: "assets/shops/Outfitters.png",
+                        isAd: true,
+                        offer: "Buy 2 Save 10%",
+                        pro: "PRO • Extra 5% off",
+                      ),
+                      ShopCardData(
+                        name: "Uniworth",
+                        meta: "Men • Smart Casual • Best sellers",
+                        image: "assets/shops/Uniworth.png",
+                        offer: "Winter Collection",
+                        pro: "Free delivery over Rs.2499",
+                      ),
+                      ShopCardData(
+                        name: "Monark",
+                        meta: "Men • Eastern Wear • New arrivals",
+                        image: "assets/shops/Monark.jpg",
+                        offer: "Season Sale",
+                        pro: "Limited time",
+                      ),
                     ],
-                    stops: const [0.0, 0.62, 1.0],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 52,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
+
+                  const SizedBox(height: 22),
+                  _sectionHeader("Trending Now", "Top Articles", Icons.local_fire_department_rounded),
+                  const SizedBox(height: 12),
+                  _trendingCategoryCards(
+                    height: 210,
+                    items: const [
+                      ("Shirts", "Overshirts • Linen • New arrivals"),
+                      ("Shoes", "Sneakers • Loafers • Best sellers"),
+                      ("Hats", "Caps • Beanies • Street style"),
+                      ("Coats", "Winter • Puffers • Warm picks"),
+                      ("Accessories", "Belts • Watches • Wallets"),
+                      ("Perfumes", "Fresh • Woody • Top rated"),
+                    ],
+                    media: const CardMedia(bg: "assets/articles/hats.jpeg"),
+                  ),
+
+                  const SizedBox(height: 22),
+                  _sectionHeader("Nearby Shops", "Fast near you", Icons.near_me_rounded),
+                  const SizedBox(height: 12),
+                  _nearbyShops(context, const [
+                    CardMedia(bg: "assets/shops/Charcoal.png"),
+                    CardMedia(bg: "assets/shops/Monark.jpg"),
+                    CardMedia(bg: "assets/shops/Outfitters.png"),
+                    CardMedia(bg: "assets/shops/Uniworth.png"),
+                  ]),
+
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
           ),
-
-          SafeArea(child: _body(context)),
         ],
       ),
     );
   }
+  SliverAppBar _mahoganySliverHeader(BuildContext context) {
+    final top = MediaQuery.of(context).padding.top;
+
+    return SliverAppBar(
+      pinned: true,          // ✅ stays at top after collapse
+      floating: false,
+      snap: false,
+      elevation: 0,
+      backgroundColor: _primary,
+      expandedHeight: 130 + top, // ✅ big header height
+      collapsedHeight: 40 + top, // ✅ minimal header height
+      automaticallyImplyLeading: false,
+
+      // Minimal header (collapsed)
+      titleSpacing: 12,
+      title: Row(
+        children: [
+          // Location pill stays even when collapsed (minimal)
+          Expanded(
+            child: _PressScale(
+              downScale: 0.985,
+              borderRadius: BorderRadius.circular(999),
+              onTap: () async {
+                HapticFeedback.selectionClick();
+                final result = await Navigator.push<SelectedLocation>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LocationSelectScreen(
+                      current: _selectedLocation,
+                      saved: List.of(_savedLocations),
+                    ),
+                  ),
+                );
+                if (result != null) setState(() => _selectedLocation = result);
+              },
+              child: _LocationPill(label: _selectedLocation?.label ?? "Current location"),
+            ),
+          ),
+          const SizedBox(width: 10),
+          _TopGlassIconButton(
+            icon: Icons.shopping_cart_rounded,
+            tintIcon: Colors.white.withOpacity(0.88),
+            onTap: () => HapticFeedback.lightImpact(),
+          ),
+          const SizedBox(width: 10),
+          _PressScale(
+            downScale: 0.965,
+            borderRadius: BorderRadius.circular(999),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            },
+            child: const _ProfilePuck(letter: "A"),
+          ),
+        ],
+      ),
+
+      // Big header content (expanded)
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: Stack(
+          children: [
+            // Mahogany gradient background
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _primary,
+                      _secondary.withOpacity(0.96),
+                      _primary.withOpacity(0.92),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Subtle glow blobs (optional, premium look)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.22,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: -60,
+                        top: 60,
+                        child: Container(
+                          width: 240,
+                          height: 240,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.white.withOpacity(0.30),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -80,
+                        top: 100,
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                _other.withOpacity(0.35),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Big header text + quick actions
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 18,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Welcome back",
+                    style: GoogleFonts.manrope(
+                      fontSize: 14.2,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withOpacity(0.80),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Find your next look",
+                    style: GoogleFonts.manrope(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.6,
+                      color: Colors.white.withOpacity(0.96),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Shop nearby stores, manage wardrobe, or generate outfits instantly.",
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12.6,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                      color: Colors.white.withOpacity(0.78),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _body(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
@@ -459,7 +620,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
               const SizedBox(height: 14),
               _heroCard(context),
-              const SizedBox(height: 18),
+              // const SizedBox(height: 18),
               _categoriesRow(context),
 
               const SizedBox(height: 18),
@@ -806,20 +967,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       {"name": "Electronics", "icon": Icons.phone_iphone_rounded},
     ];
 
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final name = items[i]["name"] as String;
-          final icon = items[i]["icon"] as IconData;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 8,      // 🔽 closer rows
+        crossAxisSpacing: 20,
+        childAspectRatio: 0.82,  // 🔽 tighter vertical layout
+      ),
+      itemBuilder: (context, i) {
+        final name = items[i]["name"] as String;
+        final icon = items[i]["icon"] as IconData;
 
-          return _PressScale(
-            downScale: 0.985,
-            borderRadius: BorderRadius.circular(999),
+        final isSecondRow = i >= 4; // 👈 divider logic
+
+        return Container(
+          decoration: BoxDecoration(
+            border: isSecondRow
+                ? Border(
+              top: BorderSide(
+                color: Colors.black.withOpacity(0.08), // subtle divider
+                width: 0.8,
+              ),
+            )
+                : null,
+          ),
+          padding: isSecondRow
+              ? const EdgeInsets.only(top: 8)
+              : EdgeInsets.zero,
+          child: _PressScale(
+            downScale: 0.8,
+            borderRadius: BorderRadius.circular(18),
             onTap: () {
               HapticFeedback.selectionClick();
               Navigator.push(
@@ -829,47 +1009,75 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               );
             },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.66),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white.withOpacity(0.82), width: 1.1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 16,
-                        offset: const Offset(0, 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 🔵 Icon bubble
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      width: 80, // 🔽 slightly smaller = tighter
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.70),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.85),
+                          width: 1.1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 14,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 18, color: _primary.withOpacity(0.80)),
-                      const SizedBox(width: 8),
-                      Text(
-                        name,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12.2,
-                          fontWeight: FontWeight.w900,
-                          color: _ink.withOpacity(0.80),
+                      child: Center(
+                        child: Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _primary.withOpacity(0.10),
+                          ),
+                          child: Icon(
+                            icon,
+                            size: 31,
+                            color: _primary.withOpacity(0.82),
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 0),
+
+                // 🏷 Label
+                Text(
+                  name,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: _ink.withOpacity(0.82),
+                    height: 1.05,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
+
   }
+
 
   // ─────────────────────────────────────────────────────────────
   // SECTION HEADER

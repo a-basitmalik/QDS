@@ -2,122 +2,141 @@ import 'package:flutter/material.dart';
 import 'wardrobe_models.dart';
 
 class WardrobeDemoData {
+  /// ✅ Your purchased inventory (demo) – replace with DB later
   static List<WardrobeItem> purchasedItems() {
     return [
-      // ───────────────── Shirts / Tops ─────────────────
+      // Shalwar Kameez
       WardrobeItem(
-        id: "top_1",
-        name: "Light Blue Shirt",
+        id: "sk_1",
+        name: "Classic White Shalwar Kameez",
+        category: WardrobeCategory.shalwarKameez,
+        style: WardrobeStyle.traditional,
+        color: const Color(0xFFF4F4F4),
+        colorName: "White",
+        available: true,
+        tags: {DayType.daily, DayType.university, DayType.function, DayType.marriage},
+      ),
+      WardrobeItem(
+        id: "sk_2",
+        name: "Navy Shalwar Kameez",
+        category: WardrobeCategory.shalwarKameez,
+        style: WardrobeStyle.traditional,
+        color: const Color(0xFF1C2A44),
+        colorName: "Navy",
+        available: true,
+        tags: {DayType.office, DayType.daily, DayType.function},
+      ),
+
+      // Pants
+      WardrobeItem(
+        id: "p_1",
+        name: "Charcoal Chinos",
+        category: WardrobeCategory.pants,
+        style: WardrobeStyle.semiFormal,
+        color: const Color(0xFF2F2F34),
+        colorName: "Charcoal",
+        available: true,
+        tags: {DayType.office, DayType.daily, DayType.university},
+      ),
+      WardrobeItem(
+        id: "p_2",
+        name: "Light Denim Jeans",
+        category: WardrobeCategory.pants,
+        style: WardrobeStyle.casual,
+        color: const Color(0xFF7AA6D6),
+        colorName: "Denim Blue",
+        available: true,
+        tags: {DayType.party, DayType.daily, DayType.university},
+      ),
+
+      // Shirts
+      WardrobeItem(
+        id: "s_1",
+        name: "Light Blue Oxford Shirt",
         category: WardrobeCategory.shirts,
         style: WardrobeStyle.semiFormal,
         color: const Color(0xFF8EC5FF),
         colorName: "Light Blue",
         available: true,
-        tags: <DayType>[
-          DayType.university,
-          DayType.office,
-          DayType.dayOut,
-        ],
+        tags: {DayType.office, DayType.university, DayType.daily},
       ),
       WardrobeItem(
-        id: "top_2",
+        id: "s_2",
         name: "Black T-Shirt",
         category: WardrobeCategory.shirts,
         style: WardrobeStyle.casual,
         color: const Color(0xFF121212),
         colorName: "Black",
         available: true,
-        tags: <DayType>[
-          DayType.dayOut,
-          DayType.casualHome,
-          DayType.summer,
-        ],
-      ),
-      WardrobeItem(
-        id: "top_3",
-        name: "White Shirt",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.semiFormal,
-        color: const Color(0xFFF5F5F5),
-        colorName: "White",
-        available: true,
-        tags: <DayType>[
-          DayType.office,
-          DayType.party,
-          DayType.custom,
-        ],
-      ),
-      WardrobeItem(
-        id: "top_4",
-        name: "Maroon Polo",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.casual,
-        color: const Color(0xFF7A0B12),
-        colorName: "Maroon",
-        available: true,
-        tags: <DayType>[
-          DayType.university,
-          DayType.dayOut,
-          DayType.winter,
-        ],
-      ),
-      WardrobeItem(
-        id: "top_5",
-        name: "Olive Tee",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.casual,
-        color: const Color(0xFF6B7B3E),
-        colorName: "Olive",
-        available: true,
-        tags: <DayType>[
-          DayType.casualHome,
-          DayType.rainy,
-          DayType.winter,
-        ],
+        tags: {DayType.party, DayType.home, DayType.daily, DayType.summer},
       ),
 
-      // ───────────────── More Tops to help generator ─────────────────
+      // Kurtas
       WardrobeItem(
-        id: "top_6",
-        name: "Navy Shirt",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.semiFormal,
-        color: const Color(0xFF1D2B4F),
-        colorName: "Navy",
-        available: true,
-        tags: <DayType>[
-          DayType.office,
-          DayType.university,
-          DayType.winter,
-        ],
-      ),
-      WardrobeItem(
-        id: "top_7",
-        name: "Beige Tee",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.casual,
+        id: "k_1",
+        name: "Beige Kurta",
+        category: WardrobeCategory.kurtas,
+        style: WardrobeStyle.traditional,
         color: const Color(0xFFE7D8C6),
         colorName: "Beige",
         available: true,
-        tags: <DayType>[
-          DayType.summer,
-          DayType.dayOut,
-          DayType.custom,
-        ],
+        tags: {DayType.function, DayType.daily, DayType.marriage},
       ),
       WardrobeItem(
-        id: "top_8",
-        name: "Charcoal Shirt",
-        category: WardrobeCategory.shirts,
-        style: WardrobeStyle.semiFormal,
-        color: const Color(0xFF2B2B2B),
-        colorName: "Charcoal",
+        id: "k_2",
+        name: "Emerald Kurta",
+        category: WardrobeCategory.kurtas,
+        style: WardrobeStyle.traditional,
+        color: const Color(0xFF0F8A6B),
+        colorName: "Emerald",
         available: true,
-        tags: <DayType>[
-          DayType.office,
-          DayType.party,
-          DayType.custom,
-        ],
+        tags: {DayType.party, DayType.function, DayType.marriage},
+      ),
+
+      // Pajamas
+      WardrobeItem(
+        id: "pj_1",
+        name: "Comfort Pajama Set",
+        category: WardrobeCategory.pajamas,
+        style: WardrobeStyle.casual,
+        color: const Color(0xFFB9C1CC),
+        colorName: "Grey",
+        available: true,
+        tags: {DayType.home, DayType.winter, DayType.daily},
+      ),
+
+      // Bridalwear
+      WardrobeItem(
+        id: "b_1",
+        name: "Maroon Bridal Sherwani",
+        category: WardrobeCategory.bridalwear,
+        style: WardrobeStyle.bridal,
+        color: const Color(0xFF5B0A14),
+        colorName: "Maroon",
+        available: true,
+        tags: {DayType.marriage, DayType.function},
+      ),
+      WardrobeItem(
+        id: "b_2",
+        name: "Golden Wedding Kurta",
+        category: WardrobeCategory.bridalwear,
+        style: WardrobeStyle.bridal,
+        color: const Color(0xFFD6B25E),
+        colorName: "Gold",
+        available: true,
+        tags: {DayType.marriage, DayType.function, DayType.party},
+      ),
+
+      // Others
+      WardrobeItem(
+        id: "o_1",
+        name: "Neutral Shawl",
+        category: WardrobeCategory.others,
+        style: WardrobeStyle.traditional,
+        color: const Color(0xFFCFC7B8),
+        colorName: "Stone",
+        available: true,
+        tags: {DayType.winter, DayType.rainy, DayType.function, DayType.daily},
       ),
     ];
   }

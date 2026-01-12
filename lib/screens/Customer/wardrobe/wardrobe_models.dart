@@ -1,203 +1,167 @@
 import 'package:flutter/material.dart';
 
+/// ✅ Day / Event types used by generator & UI
 enum DayType {
-  office,
   university,
+  office,
+  daily,
+  home,
   party,
-  dayOut,
-  casualHome,
-  casual, // ✅ exists to avoid switch exhaustiveness errors
+  function,
+  marriage,
   rainy,
   winter,
   summer,
   custom,
 }
 
+/// ✅ Categories you asked for (plus "others")
 enum WardrobeCategory {
-  shirts,
+  shalwarKameez,
   pants,
-  shoes,
-  jackets,
-  watches,
-  glasses,
-  accessories,
+  shirts,
+  kurtas,
+  pajamas,
+  bridalwear,
+  others,
 }
 
+/// ✅ Styles (optional but useful for better generation)
 enum WardrobeStyle {
-  formal,
-  semiFormal,
   casual,
-  street,
-  sporty,
+  semiFormal,
+  formal,
+  traditional,
+  bridal,
 }
 
-/// Single wardrobe item (mutable availability because you toggle it in UI)
 class WardrobeItem {
   final String id;
   final String name;
-
   final WardrobeCategory category;
+  final WardrobeStyle style;
 
+  /// UI metadata
   final Color color;
   final String colorName;
 
-  final WardrobeStyle style;
+  /// If false -> excluded from outfit generation
+  final bool available;
 
-  /// Which day types this item fits
-  final List<DayType> tags;
+  /// Tags decide which day/event the item suits
+  final Set<DayType> tags;
 
-  bool available;
-
-  WardrobeItem({
+  const WardrobeItem({
     required this.id,
     required this.name,
     required this.category,
+    required this.style,
     required this.color,
     required this.colorName,
-    required this.style,
+    required this.available,
     required this.tags,
-    this.available = true,
   });
 
-  /// handy for demo/clone flows
-  WardrobeItem copy() => WardrobeItem(
-    id: id,
-    name: name,
-    category: category,
-    color: color,
-    colorName: colorName,
-    style: style,
-    tags: List<DayType>.from(tags),
-    available: available,
-  );
+  WardrobeItem copyWith({
+    String? id,
+    String? name,
+    WardrobeCategory? category,
+    WardrobeStyle? style,
+    Color? color,
+    String? colorName,
+    bool? available,
+    Set<DayType>? tags,
+  }) {
+    return WardrobeItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      style: style ?? this.style,
+      color: color ?? this.color,
+      colorName: colorName ?? this.colorName,
+      available: available ?? this.available,
+      tags: tags ?? this.tags,
+    );
+  }
+
+  /// Convenience clone (your older code called `copy()`)
+  WardrobeItem copy() => copyWith();
 }
 
-/// Outfit output model
-class OutfitOption {
-  final WardrobeItem top;
-  final WardrobeItem bottom;
-  final WardrobeItem shoes;
-
-  final WardrobeItem? jacket;
-  final WardrobeItem? watch;
-  final WardrobeItem? glasses;
-  final List<WardrobeItem> accessories;
-
-  final String explanation;
-
-  OutfitOption({
-    required this.top,
-    required this.bottom,
-    required this.shoes,
-    this.jacket,
-    this.watch,
-    this.glasses,
-    this.accessories = const [],
-    this.explanation = "",
-  });
-}
-
-// ───────────────────────── Helpers used in UI ─────────────────────────
-
-String dayTypeTitle(DayType d) {
-  switch (d) {
-    case DayType.office:
-      return "Office Day";
-    case DayType.university:
-      return "University Day";
-    case DayType.party:
-      return "Party / Event";
-    case DayType.dayOut:
-      return "Day Out";
-    case DayType.casualHome:
-      return "Casual / Home";
-    case DayType.casual:
-      return "Casual";
-    case DayType.rainy:
-      return "Rainy Day";
-    case DayType.winter:
-      return "Winter Day";
-    case DayType.summer:
-      return "Summer Day";
-    case DayType.custom:
-      return "Custom";
+/// Helpers for pretty text in UI
+extension WardrobeCategoryLabel on WardrobeCategory {
+  String get label {
+    switch (this) {
+      case WardrobeCategory.shalwarKameez:
+        return "Shalwar Kameez";
+      case WardrobeCategory.pants:
+        return "Pants";
+      case WardrobeCategory.shirts:
+        return "Shirts";
+      case WardrobeCategory.kurtas:
+        return "Kurtas";
+      case WardrobeCategory.pajamas:
+        return "Pajamas";
+      case WardrobeCategory.bridalwear:
+        return "Bridalwear";
+      case WardrobeCategory.others:
+        return "Others";
+    }
   }
 }
 
-String dayTypeEmoji(DayType d) {
-  switch (d) {
-    case DayType.office:
-      return "🏢";
-    case DayType.university:
-      return "🎓";
-    case DayType.party:
-      return "🎉";
-    case DayType.dayOut:
-      return "🌇";
-    case DayType.casualHome:
-      return "🧘";
-    case DayType.casual:
-      return "🙂";
-    case DayType.rainy:
-      return "🌧️";
-    case DayType.winter:
-      return "❄️";
-    case DayType.summer:
-      return "🌞";
-    case DayType.custom:
-      return "➕";
+extension DayTypeLabel on DayType {
+  String get label {
+    switch (this) {
+      case DayType.university:
+        return "University";
+      case DayType.office:
+        return "Office";
+      case DayType.daily:
+        return "Daily Wear";
+      case DayType.home:
+        return "Home";
+      case DayType.party:
+        return "Party";
+      case DayType.function:
+        return "Function";
+      case DayType.marriage:
+        return "Marriage";
+      case DayType.rainy:
+        return "Rainy";
+      case DayType.winter:
+        return "Winter";
+      case DayType.summer:
+        return "Summer";
+      case DayType.custom:
+        return "Custom";
+    }
   }
-}
 
-String catTitle(WardrobeCategory c) {
-  switch (c) {
-    case WardrobeCategory.shirts:
-      return "Tops";
-    case WardrobeCategory.pants:
-      return "Bottoms";
-    case WardrobeCategory.shoes:
-      return "Shoes";
-    case WardrobeCategory.jackets:
-      return "Jackets";
-    case WardrobeCategory.watches:
-      return "Watches";
-    case WardrobeCategory.glasses:
-      return "Glasses";
-    case WardrobeCategory.accessories:
-      return "Accessories";
-  }
-}
-
-IconData catIcon(WardrobeCategory c) {
-  switch (c) {
-    case WardrobeCategory.shirts:
-      return Icons.checkroom_rounded;
-    case WardrobeCategory.pants:
-      return Icons.shopping_bag_rounded;
-    case WardrobeCategory.shoes:
-      return Icons.directions_walk_rounded;
-    case WardrobeCategory.jackets:
-      return Icons.umbrella_rounded;
-    case WardrobeCategory.watches:
-      return Icons.watch_rounded;
-    case WardrobeCategory.glasses:
-      return Icons.visibility_rounded;
-    case WardrobeCategory.accessories:
-      return Icons.auto_awesome_rounded;
-  }
-}
-
-String styleLabel(WardrobeStyle s) {
-  switch (s) {
-    case WardrobeStyle.formal:
-      return "Formal";
-    case WardrobeStyle.semiFormal:
-      return "Semi-Formal";
-    case WardrobeStyle.casual:
-      return "Casual";
-    case WardrobeStyle.street:
-      return "Street";
-    case WardrobeStyle.sporty:
-      return "Sporty";
+  String get emoji {
+    switch (this) {
+      case DayType.university:
+        return "🎓";
+      case DayType.office:
+        return "🏢";
+      case DayType.daily:
+        return "🧩";
+      case DayType.home:
+        return "🧘";
+      case DayType.party:
+        return "🎉";
+      case DayType.function:
+        return "✨";
+      case DayType.marriage:
+        return "💍";
+      case DayType.rainy:
+        return "🌧️";
+      case DayType.winter:
+        return "❄️";
+      case DayType.summer:
+        return "🌞";
+      case DayType.custom:
+        return "➕";
+    }
   }
 }
