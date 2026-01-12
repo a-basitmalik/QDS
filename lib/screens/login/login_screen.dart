@@ -10,6 +10,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../Customer/home.dart';
 import '../auth/signup_screen.dart';
+import'../ShopOwner/shop_owner_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,9 +52,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   bool remember = true;
 
   // Static auth
-  static const String _staticEmail = "customer@test.com";
-  static const String _staticPassword = "123456";
-  static const String _staticRole = "customer";
+// CUSTOMER
+  static const String _customerEmail = "customer@test.com";
+  static const String _customerPassword = "123456";
+
+// SHOP OWNER
+  static const String _shopEmail = "shop@test.com";
+  static const String _shopPassword = "112233";
+
 
   // Brand
   final String _brand = "Nexora";
@@ -762,25 +768,31 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     final email = emailCtrl.text.trim();
     final password = passCtrl.text.trim();
 
-    if (email != _staticEmail || password != _staticPassword) {
-      _showError(context, "Invalid email or password");
+    // CUSTOMER LOGIN
+    if (email == _customerEmail && password == _customerPassword) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
       return;
     }
 
-    switch (_staticRole) {
-      case "customer":
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-        break;
-      case "shop":
-        _showError(context, "Shop portal coming soon");
-        break;
-      case "rider":
-        _showError(context, "Rider portal coming soon");
-        break;
-      default:
-        _showError(context, "Unknown role");
+    // SHOP OWNER LOGIN
+    if (email == _shopEmail && password == _shopPassword) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ShopOwnerShell()),
+      );
+      return;
     }
+
+    // RIDER (future)
+    // if (email == _riderEmail && password == _riderPassword) { ... }
+
+    // INVALID
+    _showError(context, "Invalid email or password");
   }
+
 
   void _showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
