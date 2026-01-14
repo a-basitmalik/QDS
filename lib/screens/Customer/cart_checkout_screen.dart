@@ -9,7 +9,7 @@ import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 import 'order_tracking_screen.dart';
 
-class CartCheckoutScreen extends StatefulWidget {
+class CartCheckoutScreen extends StatefulWiget {
   const CartCheckoutScreen({super.key});
 
   @override
@@ -101,7 +101,8 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
     final topInset = MediaQuery.of(context).padding.top;
 
     // ✅ Remove extra gap: only cap + header + small spacing
-    final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 10;
+    final contentTopPadding = _capBaseH + topInset + 88; // Mahogany header height area
+
 
     return Scaffold(
       backgroundColor: AppColors.bg3,
@@ -254,11 +255,30 @@ class _CartCheckoutScreenState extends State<CartCheckoutScreen>
           ),
 
           // ✅ Sticky header only (no step buttons row)
-          _stickyCenteredHeader(context),
+          _mahoganyHeader(context),
 
           // ✅ Bottom CTA
           _bottomCTA(context),
         ],
+      ),
+    );
+  }
+
+  Widget _mahoganyHeader(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: _MahoganyHeaderBar(
+        topInset: topInset,
+        title: "Checkout",
+        subtitle: "Confirm address & payment details",
+        onBack: () => Navigator.pop(context),
+        rightIcon: Icons.lock_outline_rounded,
+        onRightTap: () {}, // keep muted / do nothing
+        t: _floatT.value,
       ),
     );
   }
@@ -1589,6 +1609,135 @@ class _OrderSuccessBigGlassSheetState extends State<_OrderSuccessBigGlassSheet>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+class _MahoganyHeaderBar extends StatelessWidget {
+  final double topInset;
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  final IconData rightIcon;
+  final VoidCallback onRightTap;
+
+  final double t;
+
+  const _MahoganyHeaderBar({
+    required this.topInset,
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+    required this.rightIcon,
+    required this.onRightTap,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shine = (sin(t * pi * 2) * 0.5 + 0.5);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, topInset + 10, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.98),
+            AppColors.secondary.withOpacity(0.96),
+            AppColors.primary.withOpacity(0.94),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _PressGlowScale(
+            onTap: onBack,
+            borderRadius: BorderRadius.circular(999),
+            downScale: 0.97,
+            glowColor: Colors.white.withOpacity(0.08),
+            glowBlur: 22,
+            glowOffset: const Offset(0, 14),
+            child: const _TopIconPuck(icon: Icons.arrow_back_ios_new_rounded),
+          ),
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.h2().copyWith(
+                    color: Colors.white.withOpacity(0.94),
+                    fontSize: 18.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body().copyWith(
+                    color: Colors.white.withOpacity(0.74),
+                    fontSize: 12.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          Container(
+            width: 42,
+            height: 28,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: Colors.white.withOpacity(0.14 + 0.06 * shine),
+              border: Border.all(color: Colors.white.withOpacity(0.24)),
+            ),
+            alignment: Alignment.center,
+            child: Icon(rightIcon, size: 18, color: Colors.white.withOpacity(0.86)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopIconPuck extends StatelessWidget {
+  final IconData icon;
+  const _TopIconPuck({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.18),
+            border: Border.all(color: Colors.white.withOpacity(0.28)),
+            boxShadow: AppShadows.puck,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 20, color: Colors.white.withOpacity(0.92)),
+        ),
       ),
     );
   }

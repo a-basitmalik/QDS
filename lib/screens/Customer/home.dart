@@ -417,24 +417,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   SliverAppBar _mahoganySliverHeader(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
+    const toolbar = kToolbarHeight; // 56.0
 
     return SliverAppBar(
-      pinned: true,          // ✅ stays at top after collapse
+      pinned: true,
       floating: false,
       snap: false,
       elevation: 0,
       backgroundColor: _primary,
-      expandedHeight: 130 + top, // ✅ big header height
-      collapsedHeight: 40 + top, // ✅ minimal header height
+
+      // ✅ Make these consistent
+      toolbarHeight: toolbar,
+      collapsedHeight: toolbar + top,
+      expandedHeight: 130 + top,
+
       automaticallyImplyLeading: false,
 
-      // Minimal header (collapsed)
       titleSpacing: 12,
       title: Row(
         children: [
-          // Location pill stays even when collapsed (minimal)
           Expanded(
             child: _PressScale(
               downScale: 0.985,
@@ -474,12 +478,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
 
-      // Big header content (expanded)
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
         background: Stack(
           children: [
-            // Mahogany gradient background
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(

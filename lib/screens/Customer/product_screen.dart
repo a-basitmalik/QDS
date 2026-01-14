@@ -145,7 +145,7 @@ class _ProductScreenState extends State<ProductScreen> with TickerProviderStateM
                 physics: const BouncingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   16,
-                  topInset + 92,
+                  topInset + 132,
                   16,
                   // keep bottom space so CTA doesn't cover last content
                   170,
@@ -189,7 +189,8 @@ class _ProductScreenState extends State<ProductScreen> with TickerProviderStateM
             ),
           ),
 
-          _topBar(context),
+          _mahoganyHeader(context),
+
 
           // ✅ CTA only shows when user reaches the end
           if (_showBottomCTA) _premiumBottomCTA(context),
@@ -433,6 +434,30 @@ class _ProductScreenState extends State<ProductScreen> with TickerProviderStateM
   }
 
   // ───────────────────────── HEADER ─────────────────────────
+  Widget _mahoganyHeader(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: _MahoganyHeaderBar(
+        topInset: topInset,
+        title: widget.productName,
+        subtitle: widget.shopName,
+        onBack: () => Navigator.pop(context),
+        onCart: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartCheckoutScreen()),
+          );
+        },
+        cartBadge: "3",
+        t: _floatT.value,
+      ),
+    );
+  }
+
 
   Widget _headerCard() {
     return _SectionCard(
@@ -1784,4 +1809,155 @@ class _S {
       offset: const Offset(0, 24),
     ),
   ];
+}
+
+class _MahoganyHeaderBar extends StatelessWidget {
+  final double topInset;
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+  final VoidCallback onCart;
+  final String? cartBadge;
+  final double t;
+
+  const _MahoganyHeaderBar({
+    required this.topInset,
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+    required this.onCart,
+    required this.t,
+    this.cartBadge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shine = (sin(t * pi * 2) * 0.5 + 0.5);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, topInset + 10, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.98),
+            AppColors.secondary.withOpacity(0.96),
+            AppColors.primary.withOpacity(0.94),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _PressScale(
+            onTap: onBack,
+            child: _mahoganyIconPuck(
+              icon: Icons.arrow_back_ios_new_rounded,
+              t: shine,
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.h2().copyWith(
+                    color: Colors.white.withOpacity(0.94),
+                    fontSize: 18.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body().copyWith(
+                    color: Colors.white.withOpacity(0.74),
+                    fontSize: 12.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          _PressScale(
+            onTap: onCart,
+            child: _mahoganyCartPuck(
+              t: shine,
+              badge: cartBadge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mahoganyIconPuck({required IconData icon, required double t}) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withOpacity(0.14 + 0.06 * t),
+        border: Border.all(color: Colors.white.withOpacity(0.24)),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 20, color: Colors.white.withOpacity(0.92)),
+    );
+  }
+
+  Widget _mahoganyCartPuck({required double t, String? badge}) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withOpacity(0.14 + 0.06 * t),
+        border: Border.all(color: Colors.white.withOpacity(0.24)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.shopping_cart_outlined,
+              size: 20, color: Colors.white.withOpacity(0.92)),
+          if (badge != null)
+            Positioned(
+              right: 7,
+              top: 7,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.92),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

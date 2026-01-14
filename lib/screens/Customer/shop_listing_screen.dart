@@ -90,7 +90,8 @@ class _ShopListingScreenState extends State<ShopListingScreen>
     final topInset = MediaQuery.of(context).padding.top;
 
     // ✅ padding so content never collides with sticky header
-    final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 14.0;
+    final contentTopPadding =
+        _capBaseH + topInset + 12.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg3,
@@ -169,7 +170,7 @@ class _ShopListingScreenState extends State<ShopListingScreen>
             ),
           ),
 
-          _stickyCenteredHeader(context),
+          _mahoganyHeader(context),
         ],
       ),
     );
@@ -226,6 +227,36 @@ class _ShopListingScreenState extends State<ShopListingScreen>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _mahoganyHeader(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
+    // Nice texts based on category
+    final title = widget.category;
+    final subtitle = "Browse top ${widget.category.toLowerCase()} stores near you";
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: _MahoganyHeaderBar(
+        topInset: topInset,
+        title: title,
+        subtitle: subtitle,
+        onBack: () => Navigator.pop(context),
+        onSearchToggle: () {
+          HapticFeedback.selectionClick();
+          setState(() => _showSearch = !_showSearch);
+        },
+        onFilter: () {
+          HapticFeedback.selectionClick();
+          _openFilters(context);
+        },
+        searchOn: _showSearch,
+        t: _floatT.value, // uses your existing ambient animation
       ),
     );
   }
@@ -422,6 +453,153 @@ class _ShopListingScreenState extends State<ShopListingScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => const _FiltersSheetGlass(),
+    );
+  }
+}
+
+class _MahoganyHeaderBar extends StatelessWidget {
+  final double topInset;
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  final VoidCallback onSearchToggle;
+  final VoidCallback onFilter;
+  final bool searchOn;
+
+  /// 0..1 animation
+  final double t;
+
+  const _MahoganyHeaderBar({
+    required this.topInset,
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+    required this.onSearchToggle,
+    required this.onFilter,
+    required this.searchOn,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shine = (sin(t * pi * 2) * 0.5 + 0.5);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, topInset + 10, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.98),
+            AppColors.secondary.withOpacity(0.96),
+            AppColors.primary.withOpacity(0.94),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _PressGlowScale(
+            onTap: onBack,
+            borderRadius: BorderRadius.circular(999),
+            downScale: 0.97,
+            glowOpacity: 0.10,
+            child: const _TopIconPuck(icon: Icons.arrow_back_ios_new_rounded),
+          ),
+          const SizedBox(width: 10),
+
+          // ✅ No 3D title — plain premium typography
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.h2().copyWith(
+                    color: Colors.white.withOpacity(0.94),
+                    fontSize: 18.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body().copyWith(
+                    color: Colors.white.withOpacity(0.74),
+                    fontSize: 12.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Right controls: Search + Filter (same theme)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PressGlowScale(
+                onTap: onSearchToggle,
+                borderRadius: BorderRadius.circular(999),
+                downScale: 0.97,
+                glowOpacity: 0.10,
+                child: _RoundActionPill(
+                  icon: searchOn ? Icons.close_rounded : Icons.search_rounded,
+                  shine: shine,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _PressGlowScale(
+                onTap: onFilter,
+                borderRadius: BorderRadius.circular(999),
+                downScale: 0.97,
+                glowOpacity: 0.10,
+                child: _RoundActionPill(
+                  icon: Icons.tune_rounded,
+                  shine: shine,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundActionPill extends StatelessWidget {
+  final IconData icon;
+  final double shine;
+
+  const _RoundActionPill({
+    required this.icon,
+    required this.shine,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 28,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.white.withOpacity(0.14 + 0.06 * shine),
+        border: Border.all(color: Colors.white.withOpacity(0.24)),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 18, color: Colors.white.withOpacity(0.88)),
     );
   }
 }
@@ -1447,4 +1625,29 @@ class _ShopData {
   final String rating;
   final bool openNow;
   const _ShopData(this.name, this.distance, this.eta, this.rating, this.openNow);
+}
+class _TopIconPuck extends StatelessWidget {
+  final IconData icon;
+  const _TopIconPuck({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.18),
+            border: Border.all(color: Colors.white.withOpacity(0.28)),
+            boxShadow: AppShadows.puck,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 20, color: Colors.white.withOpacity(0.92)),
+        ),
+      ),
+    );
+  }
 }

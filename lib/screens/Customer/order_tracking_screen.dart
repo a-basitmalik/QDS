@@ -22,7 +22,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   late final AnimationController _enterCtrl;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
-
   // ambient
   late final AnimationController _ambientCtrl;
   late final Animation<double> _bgT;
@@ -121,7 +120,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
           _content(topInset),
 
-          _topBar(context),
+          _mahoganyHeader(context),
 
           // ✅ redesigned premium dock
           _bottomCommandDock(context),
@@ -201,7 +200,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       child: SlideTransition(
         position: _slide,
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(16, 140 + topInset, 16, 170),
+          padding: EdgeInsets.fromLTRB(16, topInset + 120, 16, 170),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -293,6 +292,23 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _mahoganyHeader(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: _MahoganyHeaderBar(
+        topInset: topInset,
+        title: "Order Tracking",
+        subtitle: "Live status updates for your delivery",
+        onBack: () => Navigator.pop(context),
+        t: _floatT.value,
+      ),
     );
   }
 
@@ -1320,6 +1336,103 @@ class _HoloTick extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MahoganyHeaderBar extends StatelessWidget {
+  final double topInset;
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+  final double t;
+
+  const _MahoganyHeaderBar({
+    required this.topInset,
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shine = (sin(t * pi * 2) * 0.5 + 0.5);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, topInset + 10, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.98),
+            AppColors.secondary.withOpacity(0.96),
+            AppColors.primary.withOpacity(0.94),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _PressScale(
+            onTap: onBack,
+            child: const _TopIconPuck(icon: Icons.arrow_back_ios_new_rounded),
+          ),
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.h2().copyWith(
+                    color: Colors.white.withOpacity(0.94),
+                    fontSize: 18.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body().copyWith(
+                    color: Colors.white.withOpacity(0.74),
+                    fontSize: 12.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          Container(
+            width: 42,
+            height: 28,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: Colors.white.withOpacity(0.14 + 0.06 * shine),
+              border: Border.all(color: Colors.white.withOpacity(0.24)),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: Colors.white.withOpacity(0.86),
             ),
           ),
         ],

@@ -34,8 +34,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   late final Animation<double> _floatT;
 
   // Header layout constants
-  static const double _capBaseH = 150.0;
-  static const double _stickyHeaderH = 66.0;
+  static const double _mahoganyHeaderH = 98.0; // ✅ header body height (excluding status bar)
+
 
   @override
   void initState() {
@@ -75,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final topInset = MediaQuery.of(context).padding.top;
 
     // ✅ Extra top padding so content NEVER collides with sticky header
-    final contentTopPadding = _capBaseH + topInset + _stickyHeaderH + 18.0;
+    final contentTopPadding = topInset + _mahoganyHeaderH + 22.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg3,
@@ -175,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
 
           // ✅ Top Cap
-          const _ProfileTopCap(baseHeight: _capBaseH),
+          _mahoganyProfileHeader(context),
 
           // ✅ Scroll content
           FadeTransition(
@@ -299,7 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
 
           // ✅ Sticky centered header
-          _stickyCenteredHeader(context),
+          _mahoganyProfileHeader(context),
         ],
       ),
     );
@@ -315,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       left: 12,
       right: 12,
       child: _GlassHeaderShell(
-        height: _stickyHeaderH,
+        height: _mahoganyHeaderH,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -417,6 +417,110 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   // ───────────────────── Section Card ─────────────────────
+
+  Widget _mahoganyProfileHeader(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+    final shine = (sin(_floatT.value * pi * 2) * 0.5 + 0.5);
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12, topInset + 10, 12, 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withOpacity(0.98),
+              AppColors.secondary.withOpacity(0.96),
+              AppColors.primary.withOpacity(0.94),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.18),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _PressGlowScale(
+              onTap: () => Navigator.maybePop(context),
+              borderRadius: BorderRadius.circular(14),
+              child: _mahoganyIconPuck(
+                icon: Icons.arrow_back_ios_new_rounded,
+                t: shine,
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "PROFILE",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 18.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                      color: Colors.white.withOpacity(0.94),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "Abdul Basit • Manage account",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12.2,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.74),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            _PressGlowScale(
+              onTap: () {
+                // TODO: settings action
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: _mahoganyIconPuck(
+                icon: Icons.settings_outlined,
+                t: shine,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mahoganyIconPuck({required IconData icon, required double t}) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withOpacity(0.14 + 0.06 * t),
+        border: Border.all(color: Colors.white.withOpacity(0.24)),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 20, color: Colors.white.withOpacity(0.92)),
+    );
+  }
+
+
 
   Widget _sectionCard({
     required String title,
