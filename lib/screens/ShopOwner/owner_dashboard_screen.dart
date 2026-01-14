@@ -1,527 +1,271 @@
 // lib/screens/ShopOwner/owner_dashboard_screen.dart
-import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../theme/app_colors.dart';
-import '../../theme/app_radius.dart';
-import '../../theme/app_shadows.dart';
-import '../../theme/app_text.dart';
-import '../../theme/app_widgets.dart';
-
-const Duration kOrderExpireAfter = Duration(minutes: 2);
-
-/// ✅ OwnerDashboardScreen (CONTENT-ONLY)
-/// - NO Scaffold
-/// - NO bottom navigation
-/// - Shell provides background + nav
-///
-/// ✅ Includes:
-/// - Open/Closed toggle (Closed => no new orders)
-/// - NEW orders list with 2-min countdown + auto-expire
-/// - Accept/Reject confirmations
-/// - Loading / Retry / Empty states
-/// - Red slide notice (3s) from right
 class OwnerDashboardScreen extends StatefulWidget {
-  const OwnerDashboardScreen({super.key});
+  final VoidCallback onOpenOrders;
+  const OwnerDashboardScreen({super.key, required this.onOpenOrders});
 
   @override
   State<OwnerDashboardScreen> createState() => _OwnerDashboardScreenState();
 }
 
 class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
-  // Shop state
+    with TickerProviderStateMixin {
+  // ✅ Theme (match your customer reference)
+  static const _primary = Color(0xFF440C08);
+  static const _secondary = Color(0xFF750A03);
+  static const _other = Color(0xFF9B0F03);
+
+  static const _ink = Color(0xFF140504);
+
+  // mock shop state
   bool _open = true;
 
-  // Loading/network simulation
-  bool _loading = true;
-  bool _error = false;
+  // mock stats
+  final double _totalSales = 248500; // Rs
+  final double _receivable = 42100;  // Rs pending
+  final int _inventoryLeft = 186;    // items
+  final int _processing = 7;
+  final int _deliveredToday = 18;
 
-  // Orders
-  final List<_OwnerOrder> _newOrders = [];
-
-  // Timers
-  Timer? _uiTicker;
-  Timer? _mockFeed;
-
-  // Simple shop profile header info (mock)
-  final String _shopName = "Charcoal Boutique";
-  final String _shopCity = "Lahore";
-
-  // Red sliding banner
-  _SlideNoticeController? _notice;
+  late final AnimationController _ambientCtrl;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _notice = _SlideNoticeController(this);
-    _boot();
-  }
-
-  Future<void> _boot() async {
-    setState(() {
-      _loading = true;
-      _error = false;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    // set true to test error state
-    const bool simulateError = false;
-
-    if (!mounted) return;
-
-    if (simulateError) {
-      setState(() {
-        _loading = false;
-        _error = true;
-      });
-      return;
-    }
-
-    setState(() {
-      _loading = false;
-      _error = false;
-    });
-
-    _startTicker();
-    _startMockFeed();
-
-    // seed a couple orders
-    _maybeAddIncomingOrder(force: true);
-    _maybeAddIncomingOrder(force: true);
-  }
-
-  void _startTicker() {
-    _uiTicker?.cancel();
-    _uiTicker = Timer.periodic(const Duration(seconds: 1), (_) {
-      _expireIfNeeded();
-      if (mounted) setState(() {});
-    });
-  }
-
-  void _startMockFeed() {
-    _mockFeed?.cancel();
-    _mockFeed = Timer.periodic(const Duration(seconds: 18), (_) {
-      _maybeAddIncomingOrder();
-    });
-  }
-
-  void _stopMockFeed() {
-    _mockFeed?.cancel();
-    _mockFeed = null;
+    _ambientCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5400),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _uiTicker?.cancel();
-    _mockFeed?.cancel();
-    _notice?.dispose();
+    _ambientCtrl.dispose();
     super.dispose();
   }
 
+  TextStyle _h1() => GoogleFonts.manrope(
+    fontSize: 20,
+    fontWeight: FontWeight.w900,
+    letterSpacing: -0.4,
+    color: _ink.withOpacity(0.92),
+  );
+
+  TextStyle _subtle() => GoogleFonts.manrope(
+    fontSize: 12.6,
+    fontWeight: FontWeight.w800,
+    height: 1.15,
+    color: _ink.withOpacity(0.55),
+  );
+
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _expireIfNeeded();
-      if (mounted) setState(() {});
-    }
-  }
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ambientCtrl,
+      builder: (context, _) {
+        final t = _ambientCtrl.value;
+        final float = sin(t * pi * 2) * 2.5;
 
-  void _expireIfNeeded() {
-    final now = DateTime.now();
-    _newOrders.removeWhere((o) {
-      final remaining = o.expiresAt.difference(now);
-      if (remaining <= Duration.zero) {
-        _showRedNotice("Order #${o.shortId} expired & moved to next shop");
-        return true;
-      }
-      return false;
-    });
-  }
+        return Column(
+          children: [
+            _topHeader(float: float),
+            const SizedBox(height: 14),
 
-  void _maybeAddIncomingOrder({bool force = false}) {
-    if (!_open) return;
-    if (_loading || _error) return;
-
-    final allow = force || (DateTime.now().second % 2 == 0);
-    if (!allow) return;
-
-    final created = DateTime.now();
-    final order = _OwnerOrder.mock(createdAt: created);
-    setState(() => _newOrders.insert(0, order));
-
-    HapticFeedback.mediumImpact();
-    _showRedNotice("New order received (#${order.shortId})");
-  }
-
-  Future<void> _confirmReject(_OwnerOrder o) async {
-    final ok = await _confirmDialog(
-      title: "Reject order?",
-      body:
-      "Are you sure you want to reject Order #${o.shortId}? This cannot be undone.",
-      confirmText: "Reject",
-      danger: true,
-    );
-    if (!ok) return;
-
-    setState(() => _newOrders.removeWhere((x) => x.id == o.id));
-    _showRedNotice("Order #${o.shortId} rejected");
-  }
-
-  Future<void> _confirmAccept(_OwnerOrder o) async {
-    final ok = await _confirmDialog(
-      title: "Accept order?",
-      body:
-      "Accept Order #${o.shortId}? It will move to Accepted Orders and rider assignment will start.",
-      confirmText: "Accept",
-    );
-    if (!ok) return;
-
-    setState(() => _newOrders.removeWhere((x) => x.id == o.id));
-    _showRedNotice("Order #${o.shortId} accepted");
-  }
-
-  Future<bool> _confirmDialog({
-    required String title,
-    required String body,
-    required String confirmText,
-    bool danger = false,
-  }) async {
-    HapticFeedback.selectionClick();
-    return (await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
-      builder: (_) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Glass(
-              borderRadius: AppRadius.r24,
-              sigmaX: 22,
-              sigmaY: 22,
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              color: Colors.white.withOpacity(0.84),
-              borderColor: Colors.white.withOpacity(0.90),
-              shadows: AppShadows.shadowLg,
-              child: Material(
-                color: Colors.transparent,
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppText.h2()),
-                    const SizedBox(height: 8),
-                    Text(body, style: AppText.body()),
-                    const SizedBox(height: 14),
-                    Row(
+                    _sectionHeader(
+                      "Today Overview",
+                      "Sales, inventory and receivables",
+                      Icons.insights_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _statsGrid(),
+
+                    const SizedBox(height: 18),
+                    _sectionHeader(
+                      "Orders",
+                      "Processing & delivery progress",
+                      Icons.local_shipping_rounded,
+                      actionText: "Open Orders",
+                      onAction: widget.onOpenOrders,
+                    ),
+                    const SizedBox(height: 12),
+                    _ordersProgressCard(),
+
+                    const SizedBox(height: 18),
+                    _sectionHeader(
+                      "Promotions",
+                      "Boost your shop visibility",
+                      Icons.campaign_rounded,
+                      actionText: "Create",
+                      onAction: () => HapticFeedback.selectionClick(),
+                    ),
+                    const SizedBox(height: 12),
+                    _promoCards(),
+
+                    const SizedBox(height: 18),
+                    _sectionHeader(
+                      "Quick Actions",
+                      "Shortcuts for daily work",
+                      Icons.bolt_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _quickActions(),
+
+                    const SizedBox(height: 28),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _topHeader({required double float}) {
+    final r = BorderRadius.circular(24);
+
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            borderRadius: r,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _primary.withOpacity(0.96),
+                _secondary.withOpacity(0.92),
+                _primary.withOpacity(0.94),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.14),
+                blurRadius: 26,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -40,
+                top: -40 + float,
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.14),
+                      border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.0),
+                    ),
+                    child: Icon(Icons.store_rounded, color: Colors.white.withOpacity(0.92)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: PressScale(
-                            borderRadius: AppRadius.pill(),
-                            onTap: () => Navigator.pop(context, false),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 14),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.62),
-                                borderRadius: AppRadius.pill(),
-                                border: Border.all(
-                                  color: AppColors.divider.withOpacity(0.55),
-                                  width: 1.05,
-                                ),
-                              ),
-                              child: Center(
-                                child:
-                                Text("Cancel", style: AppText.button()),
-                              ),
-                            ),
+                        Text(
+                          "Charcoal Boutique",
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white.withOpacity(0.96),
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: PressScale(
-                            borderRadius: AppRadius.pill(),
-                            onTap: () => Navigator.pop(context, true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 14),
-                              decoration: BoxDecoration(
-                                gradient: danger
-                                    ? LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.danger,
-                                    AppColors.danger.withOpacity(0.85),
-                                  ],
-                                )
-                                    : AppColors.brandLinear,
-                                borderRadius: AppRadius.pill(),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.18),
-                                  width: 1.1,
-                                ),
-                                boxShadow: AppShadows.soft,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  confirmText,
-                                  style: AppText.button().copyWith(
-                                    color: Colors.white.withOpacity(0.95),
-                                  ),
-                                ),
-                              ),
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _open ? "OPEN • Lahore" : "CLOSED • Lahore",
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.2,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white.withOpacity(0.78),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  _openToggle(),
+                ],
               ),
-            ),
+            ],
           ),
-        );
-      },
-    )) ??
-        false;
-  }
-
-  void _showRedNotice(String msg) {
-    _notice?.show(context, msg);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // ✅ content-only (Shell handles background + nav)
-    return Stack(
-      children: [
-        Column(
-          children: [
-            _TopHeader(
-              shopName: _shopName,
-              shopCity: _shopCity,
-              open: _open,
-              newCount: _newOrders.length,
-              onToggleOpen: (v) {
-                setState(() => _open = v);
-                HapticFeedback.lightImpact();
-
-                if (!_open) {
-                  _stopMockFeed();
-                  _showRedNotice("Shop CLOSED — new orders paused");
-                } else {
-                  _startMockFeed();
-                  _showRedNotice("Shop OPEN — receiving orders");
-                  _maybeAddIncomingOrder(force: true);
-                }
-              },
-              onProfileTap: () {
-                // Shell Profile tab will handle, keep no route here
-                _showRedNotice("Open Profile from bottom tab");
-              },
-            ),
-            const SizedBox(height: 14),
-            Expanded(
-              child: _BodyCard(
-                loading: _loading,
-                error: _error,
-                open: _open,
-                newOrders: _newOrders,
-                onRetry: _boot,
-                onSimulateNew: () => _maybeAddIncomingOrder(force: true),
-                onReject: _confirmReject,
-                onAccept: _confirmAccept,
-              ),
-            ),
-          ],
         ),
-      ],
-    );
-  }
-}
-
-/// ─────────────────────────────────────────────
-/// Top header
-/// ─────────────────────────────────────────────
-
-class _TopHeader extends StatelessWidget {
-  final String shopName;
-  final String shopCity;
-  final bool open;
-  final int newCount;
-  final ValueChanged<bool> onToggleOpen;
-  final VoidCallback onProfileTap;
-
-  const _TopHeader({
-    required this.shopName,
-    required this.shopCity,
-    required this.open,
-    required this.newCount,
-    required this.onToggleOpen,
-    required this.onProfileTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = open ? AppColors.success : AppColors.danger;
-
-    return Glass(
-      borderRadius: AppRadius.r22,
-      sigmaX: 18,
-      sigmaY: 18,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      color: Colors.white.withOpacity(0.72),
-      borderColor: Colors.white.withOpacity(0.86),
-      shadows: AppShadows.soft,
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: AppColors.brandLinear,
-              borderRadius: AppRadius.r16,
-              boxShadow: AppShadows.soft,
-            ),
-            child: Icon(Icons.store_rounded,
-                color: Colors.white.withOpacity(0.96)),
-          ),
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(shopName, style: AppText.h2()),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: statusColor.withOpacity(0.25),
-                            blurRadius: 14,
-                            spreadRadius: 1,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(open ? "OPEN • $shopCity" : "CLOSED • $shopCity",
-                        style: AppText.subtle()),
-                    const SizedBox(width: 10),
-                    if (newCount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5),
-                        decoration: BoxDecoration(
-                          borderRadius: AppRadius.pill(),
-                          color: Colors.white.withOpacity(0.66),
-                          border: Border.all(
-                            color: AppColors.divider.withOpacity(0.55),
-                            width: 1.0,
-                          ),
-                        ),
-                        child: Text(
-                          "$newCount NEW",
-                          style: AppText.kicker().copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink.withOpacity(0.72),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          PressScale(
-            borderRadius: AppRadius.pill(),
-            downScale: 0.97,
-            onTap: onProfileTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.62),
-                borderRadius: AppRadius.pill(),
-                border: Border.all(
-                  color: AppColors.divider.withOpacity(0.55),
-                  width: 1.05,
-                ),
-              ),
-              child: Icon(Icons.person_rounded,
-                  size: 18.5, color: AppColors.ink.withOpacity(0.75)),
-            ),
-          ),
-
-          const SizedBox(width: 10),
-          _OpenCloseToggle(value: open, onChanged: onToggleOpen),
-        ],
       ),
     );
   }
-}
 
-class _OpenCloseToggle extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool> onChanged;
+  Widget _openToggle() {
+    final chipColor = _open ? const Color(0xFF2FB06B) : const Color(0xFFE04343);
+    final r = BorderRadius.circular(999);
 
-  const _OpenCloseToggle({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = value ? "OPEN" : "CLOSED";
-    final chipColor = value ? AppColors.success : AppColors.danger;
-
-    return PressScale(
-      borderRadius: AppRadius.pill(),
-      downScale: 0.98,
-      onTap: () => onChanged(!value),
+    return InkWell(
+      borderRadius: r,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => _open = !_open);
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
-          borderRadius: AppRadius.pill(),
-          color: Colors.white.withOpacity(0.62),
-          border: Border.all(
-              color: AppColors.divider.withOpacity(0.55), width: 1.05),
+          borderRadius: r,
+          color: Colors.white.withOpacity(0.16),
+          border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.0),
         ),
         child: Row(
           children: [
             Container(
               width: 34,
-              height: 22,
+              height: 20,
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                borderRadius: AppRadius.pill(),
-                color: Colors.white.withOpacity(0.70),
-                border: Border.all(
-                    color: AppColors.divider.withOpacity(0.50), width: 1.0),
+                borderRadius: r,
+                color: Colors.white.withOpacity(0.16),
               ),
               child: AnimatedAlign(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
-                alignment:
-                value ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: _open ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: AppColors.brandLinear,
-                    boxShadow: AppShadows.soft,
+                    color: Colors.white.withOpacity(0.92),
                   ),
                 ),
               ),
@@ -530,15 +274,17 @@ class _OpenCloseToggle extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                borderRadius: AppRadius.pill(),
-                color: chipColor.withOpacity(0.12),
-                border: Border.all(
-                    color: chipColor.withOpacity(0.25), width: 1.0),
+                borderRadius: r,
+                color: chipColor.withOpacity(0.20),
+                border: Border.all(color: chipColor.withOpacity(0.25), width: 1.0),
               ),
               child: Text(
-                label,
-                style: AppText.kicker()
-                    .copyWith(color: chipColor, fontWeight: FontWeight.w900),
+                _open ? "OPEN" : "CLOSED",
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: chipColor.withOpacity(0.95),
+                ),
               ),
             ),
           ],
@@ -546,663 +292,452 @@ class _OpenCloseToggle extends StatelessWidget {
       ),
     );
   }
-}
 
-/// ─────────────────────────────────────────────
-/// Body card with states + order cards
-/// ─────────────────────────────────────────────
-
-class _BodyCard extends StatelessWidget {
-  final bool loading;
-  final bool error;
-  final bool open;
-  final List<_OwnerOrder> newOrders;
-  final Future<void> Function() onRetry;
-  final VoidCallback onSimulateNew;
-  final Future<void> Function(_OwnerOrder) onReject;
-  final Future<void> Function(_OwnerOrder) onAccept;
-
-  const _BodyCard({
-    required this.loading,
-    required this.error,
-    required this.open,
-    required this.newOrders,
-    required this.onRetry,
-    required this.onSimulateNew,
-    required this.onReject,
-    required this.onAccept,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Glass(
-      borderRadius: AppRadius.r24,
-      sigmaX: 18,
-      sigmaY: 18,
-      padding: const EdgeInsets.all(14),
-      color: Colors.white.withOpacity(0.66),
-      borderColor: Colors.white.withOpacity(0.84),
-      shadows: AppShadows.shadowLg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text("New Orders", style: AppText.h3()),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.pill(),
-                  color: Colors.white.withOpacity(0.66),
-                  border: Border.all(
-                    color: AppColors.divider.withOpacity(0.55),
-                    width: 1.0,
-                  ),
-                ),
-                child: Text(
-                  "${newOrders.length}",
-                  style: AppText.kicker().copyWith(
-                    color: AppColors.ink.withOpacity(0.72),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              GlassPill(text: "Simulate", onTap: onSimulateNew),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (loading) ...[
-            const _LoadingState(),
-          ] else if (error) ...[
-            _ErrorState(onRetry: onRetry),
-          ] else if (!open) ...[
-            const _ClosedState(),
-          ] else if (newOrders.isEmpty) ...[
-            const _EmptyState(),
-          ] else ...[
-            Expanded(
-              child: ListView.separated(
-                physics: const BouncingScrollPhysics(),
-                itemCount: newOrders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final o = newOrders[i];
-                  return _NewOrderCard(
-                    order: o,
-                    onReject: () => onReject(o),
-                    onAccept: () => onAccept(o),
-                  );
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// ✅ Accept same size as Reject
-class _NewOrderCard extends StatelessWidget {
-  final _OwnerOrder order;
-  final VoidCallback onReject;
-  final VoidCallback onAccept;
-
-  const _NewOrderCard({
-    required this.order,
-    required this.onReject,
-    required this.onAccept,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final remaining = order.expiresAt.difference(now);
-    final r = remaining.isNegative ? Duration.zero : remaining;
-
-    final mm = r.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final ss = r.inSeconds.remainder(60).toString().padLeft(2, '0');
-
-    final urgency = r.inSeconds <= 20;
-    final badgeColor = urgency ? AppColors.danger : AppColors.warning;
-
-    return Glass(
-      borderRadius: AppRadius.r22,
-      sigmaX: 18,
-      sigmaY: 18,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      color: Colors.white.withOpacity(0.72),
-      borderColor: Colors.white.withOpacity(0.86),
-      shadows: AppShadows.soft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text("Order #${order.shortId}", style: AppText.h3()),
-              const Spacer(),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.pill(),
-                  color: badgeColor.withOpacity(0.12),
-                  border: Border.all(
-                      color: badgeColor.withOpacity(0.22), width: 1.0),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.timer_rounded,
-                        size: 15, color: badgeColor.withOpacity(0.95)),
-                    const SizedBox(width: 6),
-                    Text(
-                      "$mm:$ss left",
-                      style: AppText.kicker().copyWith(
-                        color: badgeColor.withOpacity(0.95),
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _MetaChip(
-                  icon: Icons.shopping_bag_rounded,
-                  text: "${order.items.length} items"),
-              const SizedBox(width: 8),
-              _MetaChip(
-                  icon: Icons.payments_rounded,
-                  text: "Rs ${order.total.toStringAsFixed(0)}"),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MetaChip(
-                    icon: Icons.local_shipping_rounded,
-                    text: order.deliveryLabel),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Column(
-            children: order.items.take(2).map((it) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: AppRadius.r12,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withOpacity(0.16),
-                            AppColors.secondary.withOpacity(0.10),
-                          ],
-                        ),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.60), width: 1.0),
-                      ),
-                      child: Icon(Icons.checkroom_rounded,
-                          size: 16, color: AppColors.ink.withOpacity(0.62)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "${it.name} • ${it.variant}",
-                        style: AppText.body(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text("x${it.qty}", style: AppText.kicker()),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: PressScale(
-                  borderRadius: AppRadius.pill(),
-                  downScale: 0.98,
-                  onTap: onReject,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.62),
-                      borderRadius: AppRadius.pill(),
-                      border: Border.all(
-                          color: AppColors.danger.withOpacity(0.25), width: 1.1),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Reject",
-                        style: AppText.button().copyWith(
-                          color: AppColors.danger.withOpacity(0.92),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: PressScale(
-                  borderRadius: AppRadius.pill(),
-                  downScale: 0.98,
-                  onTap: onAccept,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.brandLinear,
-                      borderRadius: AppRadius.pill(),
-                      border: Border.all(
-                          color: Colors.white.withOpacity(0.18), width: 1.1),
-                      boxShadow: AppShadows.soft,
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Accept",
-                        style: AppText.button().copyWith(
-                          color: Colors.white.withOpacity(0.95),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _MetaChip({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.pill(),
-        color: Colors.white.withOpacity(0.60),
-        border: Border.all(
-          color: AppColors.divider.withOpacity(0.48),
-          width: 1.0,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: AppColors.ink.withOpacity(0.72)),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              style: AppText.kicker().copyWith(
-                color: AppColors.ink.withOpacity(0.70),
-                fontWeight: FontWeight.w900,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// ─────────────────────────────────────────────
-/// States
-/// ─────────────────────────────────────────────
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget bar({double w = 1}) => Container(
-      height: 12,
-      width: MediaQuery.of(context).size.width * w,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.pill(),
-        color: Colors.white.withOpacity(0.55),
-        border: Border.all(
-            color: AppColors.divider.withOpacity(0.40), width: 1.0),
-      ),
-    );
-
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          bar(w: 0.55),
-          const SizedBox(height: 12),
-          bar(w: 0.80),
-          const SizedBox(height: 12),
-          bar(w: 0.65),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, __) => Container(
-                height: 118,
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.r18,
-                  color: Colors.white.withOpacity(0.55),
-                  border: Border.all(
-                      color: AppColors.divider.withOpacity(0.40), width: 1.0),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final Future<void> Function() onRetry;
-  const _ErrorState({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Center(
-        child: Glass(
-          borderRadius: AppRadius.r22,
-          sigmaX: 18,
-          sigmaY: 18,
-          padding: const EdgeInsets.all(16),
-          color: Colors.white.withOpacity(0.72),
-          borderColor: Colors.white.withOpacity(0.86),
-          shadows: AppShadows.soft,
+  Widget _sectionHeader(
+      String title,
+      String subtitle,
+      IconData icon, {
+        String? actionText,
+        VoidCallback? onAction,
+      }) {
+    return Row(
+      children: [
+        _floatingIcon(icon),
+        const SizedBox(width: 12),
+        Expanded(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.wifi_off_rounded,
-                  size: 34, color: AppColors.ink.withOpacity(0.75)),
+              Text(title, style: _h1()),
+              const SizedBox(height: 3),
+              Text(subtitle, style: _subtle()),
+            ],
+          ),
+        ),
+        if (actionText != null && onAction != null)
+          _glassPill(text: actionText, onTap: onAction),
+      ],
+    );
+  }
+
+  Widget _statsGrid() {
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.35,
+      children: [
+        _statCard(
+          title: "Total Sales",
+          value: "Rs ${_totalSales.toStringAsFixed(0)}",
+          icon: Icons.payments_rounded,
+          hint: "This month",
+        ),
+        _statCard(
+          title: "Receivable",
+          value: "Rs ${_receivable.toStringAsFixed(0)}",
+          icon: Icons.account_balance_wallet_rounded,
+          hint: "Pending payout",
+        ),
+        _statCard(
+          title: "Inventory Left",
+          value: "$_inventoryLeft items",
+          icon: Icons.inventory_2_rounded,
+          hint: "Low stock alerts",
+        ),
+        _statCard(
+          title: "Delivered",
+          value: "$_deliveredToday today",
+          icon: Icons.check_circle_rounded,
+          hint: "Delivery success",
+        ),
+      ],
+    );
+  }
+
+  Widget _statCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required String hint,
+  }) {
+    final r = BorderRadius.circular(22);
+
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(
+            borderRadius: r,
+            color: Colors.white.withOpacity(0.72),
+            border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 22,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _primary.withOpacity(0.10),
+                    ),
+                    child: Icon(icon, color: _primary.withOpacity(0.88), size: 18),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.trending_up_rounded, size: 18, color: _ink.withOpacity(0.35)),
+                ],
+              ),
               const SizedBox(height: 10),
-              Text("Failed to load orders", style: AppText.h3()),
+              Text(
+                value,
+                style: GoogleFonts.manrope(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w900,
+                  color: _ink.withOpacity(0.92),
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(title, style: _subtle()),
               const SizedBox(height: 6),
               Text(
-                "Check your connection and try again.",
-                style: AppText.subtle(),
-                textAlign: TextAlign.center,
+                hint,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.6,
+                  fontWeight: FontWeight.w800,
+                  color: _ink.withOpacity(0.42),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _ordersProgressCard() {
+    final r = BorderRadius.circular(24);
+    final double deliveredPct =
+    (_deliveredToday / max(1, _deliveredToday + _processing))
+        .clamp(0.0, 1.0)
+        .toDouble();
+
+
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          decoration: BoxDecoration(
+            borderRadius: r,
+            color: Colors.white.withOpacity(0.72),
+            border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 22,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _chip(icon: Icons.hourglass_top_rounded, text: "$_processing processing"),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _chip(icon: Icons.local_shipping_rounded, text: "$_deliveredToday delivered today"),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              BrandButton(text: "Retry", onTap: () => onRetry()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inbox_rounded,
-                size: 42, color: AppColors.ink.withOpacity(0.35)),
-            const SizedBox(height: 10),
-            Text("No new orders", style: AppText.h3()),
-            const SizedBox(height: 6),
-            Text(
-              "You’re all caught up. New orders will appear here.",
-              style: AppText.subtle(),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ClosedState extends StatelessWidget {
-  const _ClosedState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Center(
-        child: Glass(
-          borderRadius: AppRadius.r22,
-          sigmaX: 18,
-          sigmaY: 18,
-          padding: const EdgeInsets.all(16),
-          color: Colors.white.withOpacity(0.72),
-          borderColor: Colors.white.withOpacity(0.86),
-          shadows: AppShadows.soft,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_rounded,
-                  size: 36, color: AppColors.danger.withOpacity(0.85)),
+              Text(
+                "Delivery progress",
+                style: GoogleFonts.manrope(
+                  fontSize: 13.6,
+                  fontWeight: FontWeight.w900,
+                  color: _ink.withOpacity(0.86),
+                ),
+              ),
               const SizedBox(height: 10),
-              Text("Shop is Closed", style: AppText.h3()),
-              const SizedBox(height: 6),
-              Text("Turn OPEN to start receiving new orders.",
-                  style: AppText.subtle(), textAlign: TextAlign.center),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  height: 10,
+                  color: _primary.withOpacity(0.10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: deliveredPct,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              _secondary.withOpacity(0.95),
+                              _primary.withOpacity(0.95),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _glassPill(
+                text: "Go to Orders",
+                onTap: widget.onOpenOrders,
+                filled: true,
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-/// ─────────────────────────────────────────────
-/// Slide-in Red Notice (3s, from right)
-/// ─────────────────────────────────────────────
+  Widget _promoCards() {
+    Widget promo({
+      required String title,
+      required String sub,
+      required IconData icon,
+    }) {
+      final r = BorderRadius.circular(22);
 
-class _SlideNoticeController {
-  final TickerProvider vsync;
-  late final AnimationController ctrl;
-  late final Animation<Offset> slide;
-  late final Animation<double> fade;
-
-  OverlayEntry? _entry;
-  Timer? _hideTimer;
-
-  _SlideNoticeController(this.vsync) {
-    ctrl = AnimationController(
-      vsync: vsync,
-      duration: const Duration(milliseconds: 240),
-    );
-    slide = Tween<Offset>(
-      begin: const Offset(1.0, 0), // from right
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: ctrl, curve: Curves.easeOutCubic));
-    fade = CurvedAnimation(parent: ctrl, curve: Curves.easeOutCubic);
-  }
-
-  void show(BuildContext context, String text) {
-    _hideTimer?.cancel();
-
-    _entry?.remove();
-    _entry = OverlayEntry(
-      builder: (_) => _SlideNotice(
-        slide: slide,
-        fade: fade,
-        text: text,
-      ),
-    );
-
-    Overlay.of(context, rootOverlay: true).insert(_entry!);
-    ctrl.forward(from: 0);
-
-    _hideTimer = Timer(const Duration(seconds: 3), () async {
-      await ctrl.reverse();
-      _entry?.remove();
-      _entry = null;
-    });
-  }
-
-  void dispose() {
-    _hideTimer?.cancel();
-    ctrl.dispose();
-  }
-}
-
-class _SlideNotice extends StatelessWidget {
-  final Animation<Offset> slide;
-  final Animation<double> fade;
-  final String text;
-
-  const _SlideNotice({
-    required this.slide,
-    required this.fade,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
-
-    return Positioned(
-      top: topPad + 10,
-      right: 14,
-      left: 14,
-      child: SlideTransition(
-        position: slide,
-        child: FadeTransition(
-          opacity: fade,
-          child: Glass(
-            borderRadius: AppRadius.r22,
-            sigmaX: 18,
-            sigmaY: 18,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            color: AppColors.danger.withOpacity(0.92),
-            borderColor: Colors.white.withOpacity(0.16),
-            shadows: AppShadows.soft,
-            child: Row(
-              children: [
-                Icon(Icons.info_rounded,
-                    color: Colors.white.withOpacity(0.96), size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: AppText.body().copyWith(
-                      color: Colors.white.withOpacity(0.96),
+      return Expanded(
+        child: ClipRRect(
+          borderRadius: r,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: r,
+                color: Colors.white.withOpacity(0.70),
+                border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          _secondary.withOpacity(0.95),
+                          _primary.withOpacity(0.95),
+                        ],
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    child: Icon(icon, color: Colors.white.withOpacity(0.96), size: 18),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13.4,
+                      fontWeight: FontWeight.w900,
+                      color: _ink.withOpacity(0.90),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(sub, style: _subtle()),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        promo(
+          title: "Promoted Article",
+          sub: "Boost reach with story posts",
+          icon: Icons.article_rounded,
+        ),
+        const SizedBox(width: 12),
+        promo(
+          title: "Promoted Shop",
+          sub: "Show in top results nearby",
+          icon: Icons.storefront_rounded,
+        ),
+      ],
+    );
+  }
+
+  Widget _quickActions() {
+    final actions = [
+      ("Add Inventory", Icons.add_box_rounded),
+      ("Create Offer", Icons.local_offer_rounded),
+      ("Request Payout", Icons.payments_rounded),
+      ("Support", Icons.support_agent_rounded),
+    ];
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: actions.map((a) {
+        final r = BorderRadius.circular(999);
+        return InkWell(
+          borderRadius: r,
+          onTap: () => HapticFeedback.selectionClick(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: r,
+              color: Colors.white.withOpacity(0.70),
+              border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(a.$2, size: 18, color: _primary.withOpacity(0.86)),
+                const SizedBox(width: 8),
+                Text(
+                  a.$1,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w900,
+                    color: _ink.withOpacity(0.82),
                   ),
                 ),
               ],
             ),
           ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _floatingIcon(IconData icon) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.70),
+        border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _primary.withOpacity(0.10),
+          ),
+          child: Icon(icon, size: 18, color: _primary.withOpacity(0.86)),
         ),
       ),
     );
   }
-}
 
-/// ─────────────────────────────────────────────
-/// Mock models
-/// ─────────────────────────────────────────────
-
-class _OwnerOrder {
-  final String id;
-  final DateTime createdAt;
-  final DateTime expiresAt;
-  final String deliveryLabel;
-  final List<_OwnerOrderItem> items;
-  final double total;
-
-  _OwnerOrder({
-    required this.id,
-    required this.createdAt,
-    required this.expiresAt,
-    required this.deliveryLabel,
-    required this.items,
-    required this.total,
-  });
-
-  String get shortId => id.split("-").last;
-
-  static int _counter = 120;
-
-  static _OwnerOrder mock({required DateTime createdAt}) {
-    _counter++;
-    final id = "ORD-$_counter";
-    final expiresAt = createdAt.add(kOrderExpireAfter);
-
-    final sample = <_OwnerOrderItem>[
-      _OwnerOrderItem(
-          name: "Black T-Shirt", variant: "M • Black", qty: 2, price: 1299),
-      _OwnerOrderItem(
-          name: "Light Blue Shirt", variant: "L • Sky", qty: 1, price: 2199),
-      _OwnerOrderItem(
-          name: "Formal Pants",
-          variant: "32 • Charcoal",
-          qty: 1,
-          price: 2499),
-      _OwnerOrderItem(
-          name: "Hoodie", variant: "L • Maroon", qty: 1, price: 2799),
-    ];
-
-    // ✅ safe rotate
-    final start = _counter % (sample.length - 1);
-    final items = sample.sublist(start, start + 2);
-
-    final total =
-    items.fold<double>(0, (sum, it) => sum + (it.qty * it.price));
-
-    return _OwnerOrder(
-      id: id,
-      createdAt: createdAt,
-      expiresAt: expiresAt,
-      deliveryLabel: (createdAt.second % 3 == 0) ? "Delivery" : "Pickup",
-      items: items,
-      total: total,
+  Widget _chip({required IconData icon, required String text}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.white.withOpacity(0.62),
+        border: Border.all(color: _primary.withOpacity(0.12), width: 1.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: _ink.withOpacity(0.70)),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.manrope(
+              fontSize: 11.8,
+              fontWeight: FontWeight.w900,
+              color: _ink.withOpacity(0.78),
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
 
-class _OwnerOrderItem {
-  final String name;
-  final String variant;
-  final int qty;
-  final double price;
+  Widget _glassPill({
+    required String text,
+    required VoidCallback onTap,
+    bool filled = false,
+  }) {
+    final r = BorderRadius.circular(999);
 
-  _OwnerOrderItem({
-    required this.name,
-    required this.variant,
-    required this.qty,
-    required this.price,
-  });
+    return InkWell(
+      borderRadius: r,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: r,
+          gradient: filled
+              ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _secondary.withOpacity(0.95),
+              _primary.withOpacity(0.95),
+            ],
+          )
+              : null,
+          color: filled ? null : Colors.white.withOpacity(0.66),
+          border: Border.all(
+            color: filled ? Colors.white.withOpacity(0.18) : _primary.withOpacity(0.14),
+            width: 1.1,
+          ),
+          boxShadow: filled
+              ? [
+            BoxShadow(
+              color: _secondary.withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            )
+          ]
+              : null,
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.manrope(
+            fontSize: 12.0,
+            fontWeight: FontWeight.w900,
+            color: filled ? Colors.white.withOpacity(0.95) : _ink.withOpacity(0.80),
+          ),
+        ),
+      ),
+    );
+  }
 }
