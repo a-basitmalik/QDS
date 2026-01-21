@@ -9,7 +9,7 @@ import '../../theme/app_shadows.dart';
 import '../../theme/app_text.dart';
 import 'order_tracking_screen.dart';
 
-class CartCheckoutScreen extends StatefulWiget {
+class CartCheckoutScreen extends StatefulWidget {
   const CartCheckoutScreen({super.key});
 
   @override

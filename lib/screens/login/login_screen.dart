@@ -1,5 +1,9 @@
 import 'dart:math';
 import 'dart:ui';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+// import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +35,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   // Controllers
   late final AnimationController _introController;
   late final AnimationController _loginController;
+  static const String _baseUrl = "http://31.97.190.216:10050";
+
+  bool _isLoading = false;
 
   late final AnimationController _ambientCtrl;
   late final AnimationController _focusCtrl;
@@ -50,6 +57,20 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   bool obscure = true;
   bool remember = true;
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            message, style: const TextStyle(fontWeight: FontWeight.w600)),
+        backgroundColor: Colors.black87,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 
   // Static auth
 // CUSTOMER
@@ -104,13 +125,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   void initState() {
     super.initState();
 
-    _introController = AnimationController(vsync: this, duration: _introDuration);
-    _loginController = AnimationController(vsync: this, duration: _loginTransitionDuration);
+    _introController =
+        AnimationController(vsync: this, duration: _introDuration);
+    _loginController =
+        AnimationController(vsync: this, duration: _loginTransitionDuration);
 
     _ambientCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 5500),
-    )..repeat(reverse: true);
+    )
+      ..repeat(reverse: true);
 
     _focusCtrl = AnimationController(
       vsync: this,
@@ -125,7 +149,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _holoCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3200),
-    )..repeat();
+    )
+      ..repeat();
 
     _holoT = CurvedAnimation(parent: _holoCtrl, curve: Curves.linear);
 
@@ -153,7 +178,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   void _setupAmbientAnimations() {
     _bgT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOut);
-    _floatT = CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
+    _floatT =
+        CurvedAnimation(parent: _ambientCtrl, curve: Curves.easeInOutSine);
   }
 
   void _setupFocusAnimations() {
@@ -191,49 +217,60 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         weight: 58,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -70.0, end: 26.0).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(begin: -70.0, end: 26.0).chain(
+            CurveTween(curve: Curves.easeOutCubic)),
         weight: 22,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 26.0, end: 0.0).chain(CurveTween(curve: Cubic(0.18, 0.00, 0.00, 1.00))),
+        tween: Tween(begin: 26.0, end: 0.0).chain(
+            CurveTween(curve: Cubic(0.18, 0.00, 0.00, 1.00))),
         weight: 20,
       ),
     ]).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+      CurvedAnimation(
+          parent: _introController, curve: const Interval(logoStart, logoEnd)),
     );
 
     _logoTilt = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: -0.28, end: -0.06).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(begin: -0.28, end: -0.06).chain(
+            CurveTween(curve: Curves.easeOutCubic)),
         weight: 55,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -0.06, end: 0.22).chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween(begin: -0.06, end: 0.22).chain(
+            CurveTween(curve: Curves.easeInCubic)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.22, end: 0.0).chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween(begin: 0.22, end: 0.0).chain(
+            CurveTween(curve: Curves.easeOutBack)),
         weight: 25,
       ),
     ]).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+      CurvedAnimation(
+          parent: _introController, curve: const Interval(logoStart, logoEnd)),
     );
 
     _logoSquash = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.00, end: 1.10).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(begin: 1.00, end: 1.10).chain(
+            CurveTween(curve: Curves.easeOut)),
         weight: 55,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.10, end: 0.92).chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(begin: 1.10, end: 0.92).chain(
+            CurveTween(curve: Curves.easeIn)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.92, end: 1.00).chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween(begin: 0.92, end: 1.00).chain(
+            CurveTween(curve: Curves.easeOutBack)),
         weight: 25,
       ),
     ]).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(logoStart, logoEnd)),
+      CurvedAnimation(
+          parent: _introController, curve: const Interval(logoStart, logoEnd)),
     );
 
     _logoSkidT = CurvedAnimation(
@@ -242,20 +279,24 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
 
     _introIconFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(0.03, 0.14, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _introController,
+          curve: const Interval(0.03, 0.14, curve: Curves.easeOut)),
     );
 
     _introIconScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.92, end: 1.06).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(begin: 0.92, end: 1.06).chain(
+            CurveTween(curve: Curves.easeOutCubic)),
         weight: 70,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.06, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween(begin: 1.06, end: 1.0).chain(
+            CurveTween(curve: Curves.easeOutBack)),
         weight: 30,
       ),
     ]).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(0.06, 0.32, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _introController,
+          curve: const Interval(0.06, 0.32, curve: Curves.easeOut)),
     );
 
     final n = _brand.length;
@@ -274,43 +315,56 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
       final jump = TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween(begin: 58.0, end: -12.0).chain(CurveTween(curve: Curves.easeOutCubic)),
+          tween: Tween(begin: 58.0, end: -12.0).chain(
+              CurveTween(curve: Curves.easeOutCubic)),
           weight: 60,
         ),
         TweenSequenceItem(
-          tween: Tween(begin: -12.0, end: 0.0).chain(CurveTween(curve: Curves.elasticOut)),
+          tween: Tween(begin: -12.0, end: 0.0).chain(
+              CurveTween(curve: Curves.elasticOut)),
           weight: 40,
         ),
       ]).animate(t);
 
       final scale = TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween(begin: 0.75, end: 1.10).chain(CurveTween(curve: Curves.easeOutCubic)),
+          tween: Tween(begin: 0.75, end: 1.10).chain(
+              CurveTween(curve: Curves.easeOutCubic)),
           weight: 70,
         ),
         TweenSequenceItem(
-          tween: Tween(begin: 1.10, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)),
+          tween: Tween(begin: 1.10, end: 1.0).chain(
+              CurveTween(curve: Curves.easeOutBack)),
           weight: 30,
         ),
       ]).animate(t);
 
       final opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _introController, curve: Interval(s, min(s + window * 0.9, e), curve: Curves.easeOut)),
+        CurvedAnimation(parent: _introController,
+            curve: Interval(
+                s, min(s + window * 0.9, e), curve: Curves.easeOut)),
       );
 
       final blur = Tween<double>(begin: 8.0, end: 0.0).animate(
-        CurvedAnimation(parent: _introController, curve: Interval(s, e, curve: Curves.easeOut)),
+        CurvedAnimation(parent: _introController,
+            curve: Interval(s, e, curve: Curves.easeOut)),
       );
 
-      return _LetterAnim(char: _brand[i], jumpY: jump, scale: scale, opacity: opacity, blur: blur);
+      return _LetterAnim(char: _brand[i],
+          jumpY: jump,
+          scale: scale,
+          opacity: opacity,
+          blur: blur);
     });
 
     _introTagFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(0.70, 0.82, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _introController,
+          curve: const Interval(0.70, 0.82, curve: Curves.easeOut)),
     );
 
     _introTagSlide = Tween<double>(begin: 10.0, end: 0.0).animate(
-      CurvedAnimation(parent: _introController, curve: const Interval(0.70, 0.82, curve: Curves.easeOutCubic)),
+      CurvedAnimation(parent: _introController,
+          curve: const Interval(0.70, 0.82, curve: Curves.easeOutCubic)),
     );
 
     _introTagTypeT = CurvedAnimation(
@@ -321,19 +375,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   void _setupLoginAnimations() {
     _headerFadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _loginController, curve: const Interval(0.05, 0.35, curve: Curves.easeIn)),
+      CurvedAnimation(parent: _loginController,
+          curve: const Interval(0.05, 0.35, curve: Curves.easeIn)),
     );
 
     _headerSlideIn = Tween<double>(begin: -18.0, end: 0.0).animate(
-      CurvedAnimation(parent: _loginController, curve: const Interval(0.05, 0.35, curve: Curves.easeOutCubic)),
+      CurvedAnimation(parent: _loginController,
+          curve: const Interval(0.05, 0.35, curve: Curves.easeOutCubic)),
     );
 
     _formFadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _loginController, curve: const Interval(0.22, 0.70, curve: Curves.easeIn)),
+      CurvedAnimation(parent: _loginController,
+          curve: const Interval(0.22, 0.70, curve: Curves.easeIn)),
     );
 
     _formSlideIn = Tween<double>(begin: 22.0, end: 0.0).animate(
-      CurvedAnimation(parent: _loginController, curve: const Interval(0.22, 0.70, curve: Curves.easeOutCubic)),
+      CurvedAnimation(parent: _loginController,
+          curve: const Interval(0.22, 0.70, curve: Curves.easeOutCubic)),
     );
   }
 
@@ -367,7 +425,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
+    final topInset = MediaQuery
+        .of(context)
+        .padding
+        .top;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -385,7 +446,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     height: 170 + topInset,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.60),
-                      border: Border(bottom: BorderSide(color: AppColors.borderBase(0.65), width: 1)),
+                      border: Border(
+                          bottom: BorderSide(color: AppColors.borderBase(0.65),
+                              width: 1)),
                       boxShadow: AppShadows.topCap,
                     ),
                   ),
@@ -409,8 +472,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       animation: Listenable.merge([_introController, _holoCtrl, _ambientCtrl]),
       builder: (context, _) {
         final introFade = _introOverallFadeIn.value.clamp(0.0, 1.0);
-        final visibleChars = (_tagline.length * _introTagTypeT.value.clamp(0.0, 1.0)).round();
-        final typed = visibleChars <= 0 ? "" : _tagline.substring(0, min(visibleChars, _tagline.length));
+        final visibleChars = (_tagline.length *
+            _introTagTypeT.value.clamp(0.0, 1.0)).round();
+        final typed = visibleChars <= 0 ? "" : _tagline.substring(
+            0, min(visibleChars, _tagline.length));
 
         return Opacity(
           opacity: introFade,
@@ -444,7 +509,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     return AnimatedBuilder(
       animation: Listenable.merge([_loginController, _focusCtrl, _ambientCtrl]),
       builder: (context, _) {
-        final topInset = MediaQuery.of(context).padding.top;
+        final topInset = MediaQuery
+            .of(context)
+            .padding
+            .top;
 
         return SafeArea(
           child: Column(
@@ -463,9 +531,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           height: 42,
                           decoration: BoxDecoration(
                             borderRadius: AppRadius.r14,
-                            color: Colors.white, // ✅ changed from red gradient to white
+                            color: Colors.white,
+                            // ✅ changed from red gradient to white
                             border: Border.all(
-                              color: _red.withOpacity(0.22), // subtle theme border
+                              color: _red.withOpacity(0.22),
+                              // subtle theme border
                               width: 1,
                             ),
                             boxShadow: [
@@ -525,7 +595,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(18, 24, 18, 24 + topInset * 0.12),
+                  padding: EdgeInsets.fromLTRB(
+                      18, 24, 18, 24 + topInset * 0.12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -542,7 +613,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         ),
                       ),
                       Transform.translate(
-                        offset: Offset(0, _formSlideIn.value + _focusLift.value),
+                        offset: Offset(
+                            0, _formSlideIn.value + _focusLift.value),
                         child: Transform.scale(
                           scale: _focusZoom.value,
                           child: Opacity(
@@ -604,9 +676,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               onPressed: () {},
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.ink,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
               ),
-              child: const Text("Forgot password?", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              child: const Text("Forgot password?",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -616,17 +690,20 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         _Shiny3DButton(
           controller: _btnCtrl,
           pressT: _btnPress,
-          text: "Sign in",
+          text: _isLoading ? "Signing in..." : "Sign in",
           mahogany: _mahogany,
           blood: _blood,
           cherry: _cherry,
           red: _red,
-          onPressed: () async {
+          onPressed: _isLoading
+              ? () {}
+              : () async {
             await _btnCtrl.forward();
             await _btnCtrl.reverse();
-            _handleSignIn();
+            await _handleSignIn();
           },
         ),
+
 
         const SizedBox(height: 14),
         Row(
@@ -634,17 +711,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           children: [
             Text(
               "Don't have an account?",
-              style: TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 13,
+                  color: AppColors.muted,
+                  fontWeight: FontWeight.w600),
             ),
             TextButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SignupScreen()));
               },
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.ink,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              child: const Text("Create one", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+              child: const Text("Create one",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -666,12 +747,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: AppColors.borderBase(0.65)),
             ),
-            child: remember ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
+            child: remember ? const Icon(
+                Icons.check, color: Colors.white, size: 14) : null,
           ),
           const SizedBox(width: 10),
           Text(
             "Remember me",
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.muted),
+            style: TextStyle(fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.muted),
           ),
         ],
       ),
@@ -711,9 +795,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.55),
-            borderRadius: AppRadius.r18, // ✅ no BorderRadius.circular(AppRadius.r18)
+            borderRadius: AppRadius.r18,
+            // ✅ no BorderRadius.circular(AppRadius.r18)
             border: Border.all(
-              color: isFocused ? _red.withOpacity(0.55) : AppColors.borderBase(0.60),
+              color: isFocused ? _red.withOpacity(0.55) : AppColors.borderBase(
+                  0.60),
               width: isFocused ? 1.3 : 1.0,
             ),
             boxShadow: isFocused
@@ -733,7 +819,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               child: Row(
                 children: [
                   const SizedBox(width: 14),
-                  Icon(prefixIcon, size: 18, color: isFocused ? AppColors.ink : AppColors.muted),
+                  Icon(prefixIcon, size: 18,
+                      color: isFocused ? AppColors.ink : AppColors.muted),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
@@ -741,7 +828,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       controller: controller,
                       keyboardType: keyboardType,
                       obscureText: obscureText,
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.ink),
+                      style: TextStyle(fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink),
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: hint,
@@ -764,50 +853,82 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     final email = emailCtrl.text.trim();
     final password = passCtrl.text.trim();
 
-    // CUSTOMER LOGIN
-    if (email == _customerEmail && password == _customerPassword) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+    if (email.isEmpty || password.isEmpty) {
+      _showError("Email and password are required");
       return;
     }
 
-    // SHOP OWNER LOGIN
-    if (email == _shopEmail && password == _shopPassword) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ShopOwnerShell()),
+    setState(() => _isLoading = true);
+
+    try {
+      // ✅ Firebase ignored for now
+      const String fcmToken = "";
+
+      final resp = await http.post(
+        Uri.parse("$_baseUrl/auth/login"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+          "fcm_token": fcmToken, // send empty until Firebase is enabled
+        }),
       );
-      return;
+
+      final data = jsonDecode(resp.body);
+
+      if (resp.statusCode == 200 && data["ok"] == true) {
+        final token = data["token"].toString();
+        final user = (data["user"] ?? {}) as Map<String, dynamic>;
+
+        final userId = user["id"].toString();
+        final role = (user["role"] ?? "").toString().toLowerCase();
+
+        // Save session
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("token", token);
+        await prefs.setString("userId", userId);
+        await prefs.setString("role", role);
+
+        // Navigate by role
+        if (role == "customer") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+          return;
+        }
+
+        if (role == "shop_owner" || role == "shopowner" ||
+            role == "shop owner") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ShopOwnerShell()),
+          );
+          return;
+        }
+
+        _showError("Role not supported yet: $role");
+        return;
+      }
+
+      _showError(data["message"]?.toString() ?? "Invalid email or password");
+    } catch (e) {
+      _showError("Login failed: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    // RIDER (future)
-    // if (email == _riderEmail && password == _riderPassword) { ... }
-
-    // INVALID
-    _showError(context, "Invalid email or password");
   }
 
-
-  void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.black87,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 }
 
-/// ─────────────────────────────────────────────────────────────
+
+
+
+  /// ─────────────────────────────────────────────────────────────
 /// Background (light + subtle red blobs)
 /// ─────────────────────────────────────────────────────────────
 class NexoraBackground extends StatelessWidget {
