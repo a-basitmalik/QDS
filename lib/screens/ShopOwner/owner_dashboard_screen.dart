@@ -1,11 +1,16 @@
 // lib/screens/ShopOwner/owner_dashboard_screen.dart
 import 'dart:math';
 import 'dart:ui';
-
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'owner_promotions_screen.dart';     // the promotions create screen you already got
+import 'owner_flash_deals_screen.dart';
+import 'dart:convert';
 
+
+// new screen above
 class OwnerDashboardScreen extends StatefulWidget {
   final VoidCallback onOpenOrders;
 
@@ -27,6 +32,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
   static const _primary = Color(0xFF440C08);
   static const _secondary = Color(0xFF750A03);
   static const _other = Color(0xFF9B0F03);
+  static const String _baseUrl = "http://31.97.190.216:10050";
+
+  bool _loadingCurrentPromos = true;
+  List<Map<String, dynamic>> _promos = [];
+  List<Map<String, dynamic>> _flashDeals = [];
 
   static const _ink = Color(0xFF140504);
 
@@ -41,6 +51,17 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
   final int _deliveredToday = 18;
 
   late final AnimationController _ambientCtrl;
+  Uri _promoListUri() => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/promotions?owner_user_id=${widget.ownerUserId}",
+  );
+
+  Uri _flashListUri() => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/flash-deals?owner_user_id=${widget.ownerUserId}",
+  );
+
+  Uri _flashDeleteUri(int dealId) => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/flash-deals/$dealId?owner_user_id=${widget.ownerUserId}",
+  );
 
   @override
   void initState() {
@@ -49,7 +70,47 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 5400),
     )..repeat(reverse: true);
+
+    _loadCurrentPromotions();
   }
+
+  Future<void> _loadCurrentPromotions() async {
+    try {
+      setState(() => _loadingCurrentPromos = true);
+
+      final pRes = await http.get(_promoListUri()).timeout(const Duration(seconds: 15));
+      final dRes = await http.get(_flashListUri()).timeout(const Duration(seconds: 15));
+
+      final pj = jsonDecode(pRes.body);
+      final dj = jsonDecode(dRes.body);
+
+      setState(() {
+        _promos = (pRes.statusCode == 200 && pj["ok"] == true)
+            ? (pj["data"] as List).cast<Map<String, dynamic>>()
+            : [];
+        _flashDeals = (dRes.statusCode == 200 && dj["ok"] == true)
+            ? (dj["data"] as List).cast<Map<String, dynamic>>()
+            : [];
+        _loadingCurrentPromos = false;
+      });
+    } catch (_) {
+      setState(() => _loadingCurrentPromos = false);
+    }
+  }
+
+  Future<void> _removeFlashDeal(int dealId) async {
+    try {
+      HapticFeedback.selectionClick();
+      final res = await http.delete(_flashDeleteUri(dealId)).timeout(const Duration(seconds: 15));
+      final j = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && j["ok"] == true) {
+        _loadCurrentPromotions();
+      }
+    } catch (_) {}
+  }
+
+
 
   @override
   void dispose() {
@@ -523,56 +584,61 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
   }
 
   Widget _promoCards() {
-    Widget promo({
+    Widget card({
       required String title,
       required String sub,
       required IconData icon,
+      required VoidCallback onTap,
     }) {
       final r = BorderRadius.circular(22);
 
       return Expanded(
-        child: ClipRRect(
+        child: InkWell(
           borderRadius: r,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: r,
-                color: Colors.white.withOpacity(0.70),
-                border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          _secondary.withOpacity(0.95),
-                          _primary.withOpacity(0.95),
-                        ],
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: r,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: r,
+                  color: Colors.white.withOpacity(0.70),
+                  border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _secondary.withOpacity(0.95),
+                            _primary.withOpacity(0.95),
+                          ],
+                        ),
+                      ),
+                      child: Icon(icon, color: Colors.white.withOpacity(0.96), size: 18),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      title,
+                      style: GoogleFonts.manrope(
+                        fontSize: 13.4,
+                        fontWeight: FontWeight.w900,
+                        color: _ink.withOpacity(0.90),
                       ),
                     ),
-                    child: Icon(icon, color: Colors.white.withOpacity(0.96), size: 18),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13.4,
-                      fontWeight: FontWeight.w900,
-                      color: _ink.withOpacity(0.90),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(sub, style: _subtle()),
-                ],
+                    const SizedBox(height: 4),
+                    Text(sub, style: _subtle()),
+                  ],
+                ),
               ),
             ),
           ),
@@ -580,23 +646,160 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
       );
     }
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        promo(
-          title: "Promoted Article",
-          sub: "Boost reach with story posts",
-          icon: Icons.article_rounded,
+        Row(
+          children: [
+            card(
+              title: "Promotions",
+              sub: "Create shop promotions & flash deals",
+              icon: Icons.campaign_rounded,
+              onTap: () async {
+                HapticFeedback.selectionClick();
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OwnerPromotionsScreen(
+                      ownerUserId: widget.ownerUserId,
+                      shopId: widget.ownerUserId,
+                    ),
+                  ),
+                );
+                _loadCurrentPromotions();
+              },
+            ),
+            const SizedBox(width: 12),
+            card(
+              title: "Flash Deals",
+              sub: "List & remove flash deals",
+              icon: Icons.flash_on_rounded,
+              onTap: () async {
+                HapticFeedback.selectionClick();
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OwnerFlashDealsScreen(
+                      ownerUserId: widget.ownerUserId,
+                      shopId: widget.ownerUserId,
+                    ),
+                  ),
+                );
+                _loadCurrentPromotions();
+              },
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        promo(
-          title: "Promoted Shop",
-          sub: "Show in top results nearby",
-          icon: Icons.storefront_rounded,
+
+        const SizedBox(height: 12),
+
+        // Current Promotions list
+        ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: Colors.white.withOpacity(0.72),
+                border: Border.all(color: Colors.white.withOpacity(0.86), width: 1.1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text("Current Promotions", style: _h1()),
+                      const Spacer(),
+                      _glassPill(text: "Refresh", onTap: _loadCurrentPromotions),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text("Shop promotions + flash deals", style: _subtle()),
+                  const SizedBox(height: 12),
+
+                  if (_loadingCurrentPromos)
+                    LinearProgressIndicator(
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(999),
+                      backgroundColor: _primary.withOpacity(0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(_secondary.withOpacity(0.65)),
+                    )
+                  else ...[
+                    if (_promos.isEmpty && _flashDeals.isEmpty)
+                      Text("No active promotions yet.", style: _subtle()),
+
+                    if (_promos.isNotEmpty) ...[
+                      Text("Shop Promotions", style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      ..._promos.take(3).map((p) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.campaign_rounded, size: 18, color: _secondary.withOpacity(0.85)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Tier ${p["tier"]} • ${p["status"]} • Rs ${p["price_paid"]}",
+                                  style: _subtle(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                    ],
+
+                    if (_flashDeals.isNotEmpty) ...[
+                      Text("Flash Deals", style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      ..._flashDeals.take(3).map((d) {
+                        final dealId = int.parse(d["id"].toString());
+                        final title = (d["title"] ?? "Product").toString();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            children: [
+                              Icon(Icons.flash_on_rounded, size: 18, color: const Color(0xFFFFB000).withOpacity(0.9)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "$title • 25% OFF",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _subtle(),
+                                ),
+                              ),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () => _removeFlashDeal(dealId),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    color: const Color(0xFFE04343).withOpacity(0.10),
+                                    border: Border.all(color: const Color(0xFFE04343).withOpacity(0.22), width: 1),
+                                  ),
+                                  child: Icon(Icons.delete_rounded, size: 16, color: const Color(0xFFE04343).withOpacity(0.95)),
+                                ),
+                              )
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ]
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-
   Widget _quickActions() {
     final actions = [
       ("Add Inventory", Icons.add_box_rounded),

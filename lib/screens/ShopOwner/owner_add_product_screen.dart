@@ -1,25 +1,19 @@
 // lib/screens/ShopOwner/owner_add_product_screen.dart
+import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'owner_size_chart_screen.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'owner_size_chart_screen.dart';
+import 'package:qds/models/size_chart_models.dart';
 
-/// ✅ Add Product Screen
-/// - Uses your premium glass theme
-/// - Supports: title, description, price, sale, sale %, main image, 3 sub images
-/// - Variants: sizes + stock per size (like product_variants table)
-/// - Size chart: pick existing OR create new (opens OwnerSizeChartScreen)
-/// - Replace the _submit() section with your real API calls + DB inserts.
 class OwnerAddProductScreen extends StatefulWidget {
   final int ownerUserId;
-  final int shopId; // you can pass from prefs / login response
+  final int shopId;
 
   const OwnerAddProductScreen({
     super.key,
@@ -33,42 +27,37 @@ class OwnerAddProductScreen extends StatefulWidget {
 
 class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     with TickerProviderStateMixin {
-  // Theme
+  static const String _baseUrl = "http://31.97.190.216:10050";
+
   static const _primary = Color(0xFF440C08);
   static const _secondary = Color(0xFF750A03);
   static const _other = Color(0xFF9B0F03);
   static const _ink = Color(0xFF140504);
 
-  // Ambient
   late final AnimationController _ambientCtrl;
 
-  // Form controllers
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _salePctCtrl = TextEditingController();
 
-  // Images (urls for now - you can integrate picker later)
   final _mainImageCtrl = TextEditingController();
   final _sub1Ctrl = TextEditingController();
   final _sub2Ctrl = TextEditingController();
   final _sub3Ctrl = TextEditingController();
 
-  // Sale
   bool _onSale = false;
 
-  // Variants (size+stock)
   final List<_VariantRow> _variants = [
     _VariantRow(size: "S", stock: 10),
     _VariantRow(size: "M", stock: 8),
   ];
 
-  // Size charts (mock list - load from API by owner/shop)
-  final List<_SizeChartLite> _charts = [
-    _SizeChartLite(id: 1, title: "Men T-Shirt (cm)"),
-    _SizeChartLite(id: 2, title: "Women Kurti (cm)"),
-  ];
+  bool _loadingCharts = true;
+  final List<SizeChartLite> _charts = [];
   int? _selectedChartId;
+
+  bool _saving = false;
 
   @override
   void initState() {
@@ -78,9 +67,10 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
       duration: const Duration(milliseconds: 6000),
     )..repeat(reverse: true);
 
-    // Defaults
     _priceCtrl.text = "0";
     _salePctCtrl.text = "10";
+
+    _loadSizeCharts();
   }
 
   @override
@@ -111,24 +101,66 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     color: _ink.withOpacity(0.55),
   );
 
+  Uri _sizeChartsUri() => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/size-charts",
+  );
+
+  Future<void> _loadSizeCharts() async {
+    try {
+      if (mounted) setState(() => _loadingCharts = true);
+
+      final res = await http.get(_sizeChartsUri()).timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) {
+        if (mounted) setState(() => _loadingCharts = false);
+        return;
+      }
+
+      final decoded = jsonDecode(res.body);
+      final list = (decoded["data"] as List? ?? const []);
+
+      final parsed = list.map((e) {
+        final m = e as Map<String, dynamic>;
+        final id = (m["id"] as num).toInt();
+        final title = (m["title"] ?? "").toString();
+        final unit = (m["unit"] ?? "cm").toString();
+        return SizeChartLite(id: id, title: "$title ($unit)");
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _charts
+          ..clear()
+          ..addAll(parsed);
+        // keep selection if still exists
+        if (_selectedChartId != null &&
+            !_charts.any((c) => c.id == _selectedChartId)) {
+          _selectedChartId = null;
+        }
+        _loadingCharts = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCharts = false);
+    }
+  }
+
   Future<void> _openCreateSizeChart() async {
     HapticFeedback.selectionClick();
-    final created = await Navigator.push<_SizeChartLite>(
+
+    final created = await Navigator.push<SizeChartLite>(
       context,
       MaterialPageRoute(
         builder: (_) => OwnerSizeChartScreen(
           ownerUserId: widget.ownerUserId,
-          shopId: widget.shopId,
+          shopId: widget.ownerUserId,
         ),
       ),
     );
 
-    // If screen returns a created chart, add it and select
     if (created != null) {
-      setState(() {
-        _charts.insert(0, created);
-        _selectedChartId = created.id;
-      });
+      // refresh list from server to ensure ID exists + consistent
+      await _loadSizeCharts();
+      if (!mounted) return;
+      setState(() => _selectedChartId = created.id);
     }
   }
 
@@ -142,7 +174,13 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     setState(() => _variants.removeAt(idx));
   }
 
+  Uri _createProductUri() => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/products/full",
+  );
+
   Future<void> _submit() async {
+    if (_saving) return;
+
     final title = _titleCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0;
@@ -165,62 +203,63 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     if (_onSale && salePct <= 0) return _toast("Sale percent must be > 0.");
     if (variants.isEmpty) return _toast("Add at least one size/stock variant.");
 
+    final payload = {
+      "owner_user_id": widget.ownerUserId,
+      "title": title,
+      "description": desc,
+      "price": price,
+      "is_on_sale": _onSale ? 1 : 0,
+      "sale_percent": _onSale ? salePct : null,
+      "main_image_url": mainImg.isEmpty ? null : mainImg,
+      "sub_images": subs,
+      "variants": variants,
+      // ✅ join-table will use this:
+      "size_chart_id": _selectedChartId,
+    };
+
     try {
+      setState(() => _saving = true);
       HapticFeedback.mediumImpact();
-
-      final uri = Uri.parse(
-        "http://31.97.190.216:10050/shop-owner/shops/${widget.shopId}/products/full",
-      );
-
-      final payload = {
-        "owner_user_id": widget.ownerUserId,
-        "title": title,
-        "description": desc,
-        "price": price,
-        "is_on_sale": _onSale ? 1 : 0,
-        "sale_percent": _onSale ? salePct : null,
-        "main_image_url": mainImg.isEmpty ? null : mainImg,
-        "sub_images": subs,
-        "variants": variants,
-        "size_chart_id": _selectedChartId,
-      };
 
       final res = await http
           .post(
-        uri,
+        _createProductUri(),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(payload),
       )
           .timeout(const Duration(seconds: 20));
 
-      final decoded = jsonDecode(res.body);
+      Map<String, dynamic>? decoded;
+      try {
+        decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      } catch (_) {}
 
       if (res.statusCode != 201) {
-        final msg = (decoded is Map && decoded["error"] != null)
+        final msg = (decoded != null && decoded["error"] != null)
             ? decoded["error"].toString()
             : "Save failed (${res.statusCode})";
         _toast(msg);
+        setState(() => _saving = false);
         return;
       }
 
-      _toast("✅ Product saved");
       if (!mounted) return;
+      _toast("✅ Product saved");
+      setState(() => _saving = false);
 
-      // Return to previous screen (and refresh list there)
       Navigator.pop(context, true);
     } catch (e) {
-      _toast("❌ Error: $e");
+      if (mounted) {
+        setState(() => _saving = false);
+        _toast("❌ Error: $e");
+      }
     }
   }
-
 
   void _toast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          msg,
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
-        ),
+        content: Text(msg, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
       ),
     );
   }
@@ -235,7 +274,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
 
         return Stack(
           children: [
-            // ambient subtle overlay
             Positioned(
               right: -90 - float * 10,
               top: 40 + float * 6,
@@ -246,7 +284,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
               top: 220 - float * 6,
               child: _GlowBlob(color: _other.withOpacity(0.10), size: 260),
             ),
-
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -310,7 +347,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 18),
                         _sectionHeader(
                           "Images",
@@ -359,7 +395,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 18),
                         _sectionHeader(
                           "Sizes & Stock",
@@ -374,7 +409,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                         const SizedBox(height: 18),
                         _sectionHeader(
                           "Size Chart",
-                          "Select existing or create a new one",
+                          "Loads from server (size_charts.shop_id = owner/shop id)",
                           Icons.table_chart_rounded,
                         ),
                         const SizedBox(height: 12),
@@ -382,8 +417,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
 
                         const SizedBox(height: 18),
                         _glassPill(
-                          text: "Save Product",
-                          onTap: () => _submit(),
+                          text: _saving ? "Saving..." : "Save Product",
+                          onTap: _saving ? () {} : _submit,
                           filled: true,
                         ),
                         const SizedBox(height: 22),
@@ -401,7 +436,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
 
   Widget _topBar() {
     final r = BorderRadius.circular(22);
-
     return ClipRRect(
       borderRadius: r,
       child: BackdropFilter(
@@ -457,10 +491,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                   ],
                 ),
               ),
-              _glassPill(
-                text: "Back",
-                onTap: () => Navigator.pop(context),
-              ),
+              _glassPill(text: "Back", onTap: () => Navigator.pop(context)),
             ],
           ),
         ),
@@ -573,7 +604,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     TextInputType keyboardType = TextInputType.text,
   }) {
     final r = BorderRadius.circular(18);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -612,8 +642,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                           color: _ink.withOpacity(0.35),
                         ),
                         border: InputBorder.none,
-                        contentPadding:
-                        const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -647,8 +676,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_offer_rounded,
-                size: 18, color: chip.withOpacity(0.95)),
+            Icon(Icons.local_offer_rounded, size: 18, color: chip.withOpacity(0.95)),
             const SizedBox(width: 8),
             Text(
               _onSale ? "On Sale" : "No Sale",
@@ -676,6 +704,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                 children: [
                   Expanded(
                     child: _miniField(
+                      key: ValueKey("size_${i}_${v.size}"),
+
                       label: "Size",
                       value: v.size,
                       hint: "e.g. M",
@@ -686,6 +716,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                   const SizedBox(width: 10),
                   Expanded(
                     child: _miniField(
+                      key: ValueKey("stock_${i}_${v.stock}"),
+
                       label: "Stock",
                       value: v.stock.toString(),
                       hint: "0",
@@ -726,7 +758,9 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     );
   }
 
+  // ✅ FIXED typing: no controller created per build; uses TextFormField initialValue
   Widget _miniField({
+    Key? key,
     required String label,
     required String value,
     required String hint,
@@ -735,9 +769,9 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     required ValueChanged<String> onChanged,
   }) {
     final r = BorderRadius.circular(18);
-    final ctrl = TextEditingController(text: value);
 
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: _subtle()),
@@ -758,8 +792,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                   Icon(icon, size: 18, color: _primary.withOpacity(0.78)),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: TextField(
-                      controller: ctrl,
+                    child: TextFormField(
+                      initialValue: value,
                       keyboardType: keyboardType,
                       style: GoogleFonts.manrope(
                         fontSize: 13.0,
@@ -774,8 +808,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                           color: _ink.withOpacity(0.35),
                         ),
                         border: InputBorder.none,
-                        contentPadding:
-                        const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onChanged: onChanged,
                     ),
@@ -797,8 +830,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         children: [
           Text("Attach size chart (optional)", style: _subtle()),
           const SizedBox(height: 10),
-
-          // dropdown + create new
           Row(
             children: [
               Expanded(child: _chartDropdown()),
@@ -806,17 +837,23 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
               _glassPill(text: "Create new", onTap: _openCreateSizeChart),
             ],
           ),
-
           const SizedBox(height: 10),
-          Text(
-            _selectedChartId == null
-                ? "No size chart selected."
-                : "Selected: ${_charts.firstWhere((c) => c.id == _selectedChartId).title}",
-            style: GoogleFonts.manrope(
-              fontSize: 12.2,
-              fontWeight: FontWeight.w900,
-              color: _ink.withOpacity(0.70),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _selectedChartId == null
+                      ? "No size chart selected."
+                      : "Selected: ${_charts.firstWhere((c) => c.id == _selectedChartId).title}",
+                  style: GoogleFonts.manrope(
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w900,
+                    color: _ink.withOpacity(0.70),
+                  ),
+                ),
+              ),
+              _glassPill(text: "Refresh", onTap: _loadSizeCharts),
+            ],
           ),
         ],
       ),
@@ -825,6 +862,25 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
 
   Widget _chartDropdown() {
     final r = BorderRadius.circular(18);
+
+    if (_loadingCharts) {
+      return Container(
+        height: 44,
+        decoration: BoxDecoration(
+          borderRadius: r,
+          color: Colors.white.withOpacity(0.66),
+          border: Border.all(color: _primary.withOpacity(0.10), width: 1.0),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.centerLeft,
+        child: Text("Loading size charts...",
+            style: GoogleFonts.manrope(
+              fontSize: 12.6,
+              fontWeight: FontWeight.w900,
+              color: _ink.withOpacity(0.45),
+            )),
+      );
+    }
 
     return ClipRRect(
       borderRadius: r,
@@ -861,19 +917,17 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                     ),
                   ),
                 ),
-                ..._charts.map((c) {
-                  return DropdownMenuItem<int?>(
-                    value: c.id,
-                    child: Text(
-                      c.title,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12.8,
-                        fontWeight: FontWeight.w900,
-                        color: _ink.withOpacity(0.80),
-                      ),
+                ..._charts.map((c) => DropdownMenuItem<int?>(
+                  value: c.id,
+                  child: Text(
+                    c.title,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12.8,
+                      fontWeight: FontWeight.w900,
+                      color: _ink.withOpacity(0.80),
                     ),
-                  );
-                }).toList(),
+                  ),
+                )),
               ],
               onChanged: (v) {
                 HapticFeedback.selectionClick();
@@ -904,16 +958,12 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
               ? LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              _secondary.withOpacity(0.95),
-              _primary.withOpacity(0.95),
-            ],
+            colors: [_secondary.withOpacity(0.95), _primary.withOpacity(0.95)],
           )
               : null,
           color: filled ? null : Colors.white.withOpacity(0.66),
           border: Border.all(
-            color:
-            filled ? Colors.white.withOpacity(0.18) : _primary.withOpacity(0.14),
+            color: filled ? Colors.white.withOpacity(0.18) : _primary.withOpacity(0.14),
             width: 1.1,
           ),
           boxShadow: filled
@@ -942,7 +992,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
 class _GlowBlob extends StatelessWidget {
   final Color color;
   final double size;
-
   const _GlowBlob({required this.color, required this.size});
 
   @override
@@ -964,10 +1013,4 @@ class _VariantRow {
   String size;
   int stock;
   _VariantRow({required this.size, required this.stock});
-}
-
-class _SizeChartLite {
-  final int id;
-  final String title;
-  const _SizeChartLite({required this.id, required this.title});
 }

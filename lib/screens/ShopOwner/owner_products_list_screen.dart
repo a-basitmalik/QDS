@@ -57,7 +57,7 @@ class _OwnerProductsListScreenState extends State<OwnerProductsListScreen>
       setState(() => _loading = true);
 
       final uri = Uri.parse(
-        "http://31.97.190.216:10050/shop-owner/shops/${widget.shopId}/products"
+        "http://31.97.190.216:10050/shop-owner/shops/${widget.ownerUserId}/products"
             "?owner_user_id=${widget.ownerUserId}",
       );
 
@@ -148,7 +148,7 @@ class _OwnerProductsListScreenState extends State<OwnerProductsListScreen>
       MaterialPageRoute(
         builder: (_) => OwnerProductDetailScreen(
           ownerUserId: widget.ownerUserId,
-          shopId: widget.shopId,
+          shopId: widget.ownerUserId,
           productId: p.id,
           // optionally pass lite to show instantly; detail screen can fetch full.
           initialLite: p,

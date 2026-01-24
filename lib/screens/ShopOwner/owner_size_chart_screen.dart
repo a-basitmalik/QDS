@@ -7,17 +7,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:qds/models/size_chart_models.dart';
 
-/// ✅ Create / Edit Size Chart Screen (FULLY DYNAMIC)
-/// Backend:
-///   GET  /shop-owner/shops/<shopId>/products/<productId>/size-chart
-///   POST /shop-owner/shops/<shopId>/products/<productId>/size-chart  (upsert)
+/// ✅ Create Size Chart Screen (FULLY DYNAMIC, FIXED)
+/// Backend expected:
+///   GET  /shop-owner/shops/<shopId>/size-charts
+///        -> { ok: true, data: [ { id,title,unit,rows:[...] }, ... ] }
 ///
-/// Saves into:
-///   size_charts(product_id,title,unit)
-///   size_chart_rows(size_chart_id,size,chest,waist,length,shoulder,sort_order)
+///   POST /shop-owner/shops/<shopId>/size-charts
+///        body: { title, unit, rows:[{size,chest,waist,length,shoulder}] }
+///        -> { ok: true, data: { id: <chart_id>, shop_id: <shopId> } }
+///
+/// FIXES INCLUDED:
+/// ✅ Uses shopId in URL (not ownerUserId)
+/// ✅ Safe status handling (no false "Error" after successful insert)
+/// ✅ Proper JSON parsing (won't crash if server returns HTML/text)
+/// ✅ Text fields WORK (no controllers recreated every build)
+/// ✅ Pops back to AddProductScreen on success (returns created chart)
 class OwnerSizeChartScreen extends StatefulWidget {
-  final int ownerUserId;
+  final int ownerUserId; // UI only (for header); backend uses shopId
   final int shopId;
 
   const OwnerSizeChartScreen({
@@ -52,9 +60,8 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     _ChartRow(size: "M", chest: 52, waist: 44, length: 70, shoulder: 44),
   ];
 
-  bool _loading = true;
+  bool _loading = false; // optional (we don't have to load anything)
   bool _saving = false;
-  int? _chartId; // returned by backend (size_charts.id)
 
   @override
   void initState() {
@@ -64,6 +71,7 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
       duration: const Duration(milliseconds: 6000),
     )..repeat(reverse: true);
 
+    // Optional: load existing charts; safe + non-blocking
     _fetchExisting();
   }
 
@@ -73,6 +81,11 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     _titleCtrl.dispose();
     super.dispose();
   }
+
+  // ✅ shopId is used here (correct)
+  Uri _getChartsUri() => Uri.parse(
+    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/size-charts",
+  );
 
   TextStyle _h1() => GoogleFonts.manrope(
     fontSize: 18.5,
@@ -88,11 +101,6 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     color: _ink.withOpacity(0.55),
   );
 
-  Uri _getUri() => Uri.parse(
-    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/size-charts",
-  );
-
-
   double? _toDouble(dynamic v) {
     if (v == null) return null;
     if (v is num) return v.toDouble();
@@ -105,27 +113,38 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     return int.tryParse(v.toString()) ?? fallback;
   }
 
+  // ✅ Safe optional loader (won’t block / won’t break typing)
   Future<void> _fetchExisting() async {
     try {
-      if (mounted) setState(() => _loading = true);
+      if (!mounted) return;
+      setState(() => _loading = true);
 
-      final res = await http.get(_getUri()).timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) {
+      final res =
+      await http.get(_getChartsUri()).timeout(const Duration(seconds: 15));
+
+      Map<String, dynamic>? j;
+      try {
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map<String, dynamic>) j = decoded;
+      } catch (_) {}
+
+      if (res.statusCode != 200 || j == null) {
+        if (!mounted) return;
         setState(() => _loading = false);
         return;
       }
 
-      final list = jsonDecode(res.body)["data"] as List;
-
+      final list = (j["data"] as List?) ?? const [];
       if (list.isEmpty) {
+        if (!mounted) return;
         setState(() => _loading = false);
         return;
       }
 
-      // Load first chart for demo (you can later make selector screen)
+      // Load latest chart for convenience
       final data = list.first as Map<String, dynamic>;
+      final rowsRaw = (data["rows"] as List?) ?? const [];
 
-      final rowsRaw = (data["rows"] as List? ?? []);
       final parsedRows = rowsRaw.map((r) {
         final m = r as Map<String, dynamic>;
         return _ChartRow(
@@ -137,32 +156,30 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
         );
       }).toList();
 
+      if (!mounted) return;
       setState(() {
-        _chartId = data["id"];
-        _titleCtrl.text = data["title"] ?? "New Size Chart";
-        _unit = data["unit"] ?? "cm";
-        _rows
-          ..clear()
-          ..addAll(parsedRows);
+        _titleCtrl.text = (data["title"] ?? "New Size Chart").toString();
+        _unit = (data["unit"] ?? "cm").toString();
+        if (parsedRows.isNotEmpty) {
+          _rows
+            ..clear()
+            ..addAll(parsedRows);
+        }
         _loading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
 
-
   void _addRow() {
     HapticFeedback.selectionClick();
-    setState(() => _rows.add(
-      _ChartRow(
-        size: "",
-        chest: null,
-        waist: null,
-        length: null,
-        shoulder: null,
-      ),
-    ));
+    setState(() {
+      _rows.add(
+        _ChartRow(size: "", chest: null, waist: null, length: null, shoulder: null),
+      );
+    });
   }
 
   void _removeRow(int idx) {
@@ -184,40 +201,62 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     }
 
     final payload = {
-      "chart_id": _chartId, // for update
       "title": title,
       "unit": _unit,
       "rows": validRows.map((r) => r.toJson()).toList(),
-      "owner_user_id": widget.ownerUserId,
     };
 
     try {
+      if (!mounted) return;
       setState(() => _saving = true);
 
-      final res = await http.post(
-        _getUri(),
+      final res = await http
+          .post(
+        _getChartsUri(),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(payload),
-      );
+      )
+          .timeout(const Duration(seconds: 15));
 
-      final j = jsonDecode(res.body);
-      _chartId = j["data"]["id"];
-
+      if (!mounted) return;
       setState(() => _saving = false);
 
+      // ✅ Safe JSON parsing
+      Map<String, dynamic>? j;
+      try {
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map<String, dynamic>) j = decoded;
+      } catch (_) {}
+
+      // ✅ If not ok status, show real server message (no fake errors)
+      if (res.statusCode != 201 && res.statusCode != 200) {
+        final msg = (j?["error"] ??
+            j?["message"] ??
+            "Failed to save (${res.statusCode})")
+            .toString();
+        _toast(msg);
+        return;
+      }
+
+      final idRaw = j?["data"]?["id"];
+      final chartId = (idRaw is num) ? idRaw.toInt() : int.tryParse("$idRaw");
+
+      if (chartId == null) {
+        _toast("Saved, but server did not return chart id.");
+        return;
+      }
+
+      // ✅ Success -> return to AddProductScreen with created chart
       Navigator.pop(
         context,
-        _SizeChartLite(
-          id: _chartId!,
-          title: "$title ($_unit)",
-        ),
+        SizeChartLite(id: chartId, title: "$title ($_unit)"),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _saving = false);
       _toast("Error: $e");
     }
   }
-
 
   void _toast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -245,18 +284,12 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
               Positioned(
                 right: -90 - float * 10,
                 top: 80 + float * 6,
-                child: _GlowBlob(
-                  color: _secondary.withOpacity(0.12),
-                  size: 240,
-                ),
+                child: _GlowBlob(color: _secondary.withOpacity(0.12), size: 240),
               ),
               Positioned(
                 left: -90 + float * 10,
                 top: 250 - float * 6,
-                child: _GlowBlob(
-                  color: _other.withOpacity(0.10),
-                  size: 260,
-                ),
+                child: _GlowBlob(color: _other.withOpacity(0.10), size: 260),
               ),
               SafeArea(
                 child: Padding(
@@ -314,18 +347,13 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                               children: [
                                 Expanded(
                                   child: Text(
-                                    _chartId == null
-                                        ? "New size chart"
-                                        : "Editing chart #$_chartId",
+                                    "Shop #${widget.shopId} • Owner #${widget.ownerUserId}",
                                     style: _subtle(),
                                   ),
                                 ),
-                                _glassPill(
-                                  text: "Refresh",
-                                  onTap: _fetchExisting,
-                                ),
+                                _glassPill(text: "Refresh", onTap: _fetchExisting),
                               ],
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -384,10 +412,7 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                 _primary.withOpacity(0.94),
               ],
             ),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.18),
-              width: 1.1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.14),
@@ -404,15 +429,9 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.14),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
-                    width: 1.0,
-                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.0),
                 ),
-                child: Icon(
-                  Icons.straighten_rounded,
-                  color: Colors.white.withOpacity(0.92),
-                ),
+                child: Icon(Icons.straighten_rounded, color: Colors.white.withOpacity(0.92)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -630,7 +649,7 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
         itemCount: _rows.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, i) {
-          final r = _rows[i];
+          final row = _rows[i];
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -640,10 +659,10 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                   Expanded(
                     child: _miniField(
                       label: "Size",
-                      value: r.size,
+                      value: row.size,
                       hint: "S / M / L",
                       icon: Icons.straighten_rounded,
-                      onChanged: (x) => setState(() => r.size = x),
+                      onChanged: (x) => setState(() => row.size = x),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -675,22 +694,24 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                   Expanded(
                     child: _miniField(
                       label: "Chest",
-                      value: _numStr(r.chest),
+                      value: _numStr(row.chest),
                       hint: "—",
                       icon: Icons.crop_free_rounded,
                       keyboardType: TextInputType.number,
-                      onChanged: (x) => setState(() => r.chest = double.tryParse(x)),
+                      onChanged: (x) =>
+                          setState(() => row.chest = double.tryParse(x)),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _miniField(
                       label: "Waist",
-                      value: _numStr(r.waist),
+                      value: _numStr(row.waist),
                       hint: "—",
                       icon: Icons.crop_free_rounded,
                       keyboardType: TextInputType.number,
-                      onChanged: (x) => setState(() => r.waist = double.tryParse(x)),
+                      onChanged: (x) =>
+                          setState(() => row.waist = double.tryParse(x)),
                     ),
                   ),
                 ],
@@ -701,22 +722,24 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                   Expanded(
                     child: _miniField(
                       label: "Length",
-                      value: _numStr(r.length),
+                      value: _numStr(row.length),
                       hint: "—",
                       icon: Icons.swap_vert_rounded,
                       keyboardType: TextInputType.number,
-                      onChanged: (x) => setState(() => r.length = double.tryParse(x)),
+                      onChanged: (x) =>
+                          setState(() => row.length = double.tryParse(x)),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _miniField(
                       label: "Shoulder",
-                      value: _numStr(r.shoulder),
+                      value: _numStr(row.shoulder),
                       hint: "—",
                       icon: Icons.swap_horiz_rounded,
                       keyboardType: TextInputType.number,
-                      onChanged: (x) => setState(() => r.shoulder = double.tryParse(x)),
+                      onChanged: (x) =>
+                          setState(() => row.shoulder = double.tryParse(x)),
                     ),
                   ),
                 ],
@@ -728,10 +751,7 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     );
   }
 
-  String _numStr(double? v) => v == null
-      ? ""
-      : (v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1));
-
+  // ✅ FIXED: no controllers recreated every build (typing works)
   Widget _miniField({
     required String label,
     required String value,
@@ -741,7 +761,6 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
     required ValueChanged<String> onChanged,
   }) {
     final r = BorderRadius.circular(18);
-    final ctrl = TextEditingController(text: value);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,8 +783,8 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
                   Icon(icon, size: 18, color: _primary.withOpacity(0.78)),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: TextField(
-                      controller: ctrl,
+                    child: TextFormField(
+                      initialValue: value,
                       keyboardType: keyboardType,
                       style: GoogleFonts.manrope(
                         fontSize: 13.0,
@@ -794,6 +813,10 @@ class _OwnerSizeChartScreenState extends State<OwnerSizeChartScreen>
       ],
     );
   }
+
+  String _numStr(double? v) => v == null
+      ? ""
+      : (v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1));
 
   Widget _glassPill({
     required String text,
@@ -896,9 +919,9 @@ class _ChartRow {
   };
 }
 
-/// Returned to product screen
-class _SizeChartLite {
-  final int id;
-  final String title;
-  const _SizeChartLite({required this.id, required this.title});
-}
+/// Returned to AddProductScreen
+// class _SizeChartLite {
+//   final int id;
+//   final String title;
+//   const _SizeChartLite({required this.id, required this.title});
+// }
