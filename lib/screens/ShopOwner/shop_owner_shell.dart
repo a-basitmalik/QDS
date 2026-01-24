@@ -5,12 +5,18 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'owner_add_product_screen.dart'; // ✅ add this import
+import 'owner_size_chart_screen.dart';  // optional direct navigation tab if you want
+import 'owner_products_list_screen.dart';
 import 'owner_dashboard_screen.dart'; // stats dashboard (below)
 import 'owner_orders_screen.dart';    // your orders screen (below)
-
 class ShopOwnerShell extends StatefulWidget {
-  const ShopOwnerShell({super.key});
+  final int ownerUserId;   // ✅ receive from login
+
+  const ShopOwnerShell({
+    super.key,
+    required this.ownerUserId,
+  });
 
   @override
   State<ShopOwnerShell> createState() => _ShopOwnerShellState();
@@ -57,16 +63,29 @@ class _ShopOwnerShellState extends State<ShopOwnerShell>
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      OwnerDashboardScreen(onOpenOrders: _goOrders),
+      OwnerDashboardScreen(
+        ownerUserId: widget.ownerUserId,
+        onOpenOrders: _goOrders,
+      ),
+
       OwnerOrdersScreen(
         // optional: if you want Orders screen to clear badge when opened
         onOrdersSeen: () => setState(() => _ordersBadge = 0),
       ),
-      const _PlaceholderScreen(
-        title: "Articles",
-        subtitle: "Coming soon • publish & promote articles",
-        icon: Icons.article_rounded,
+      // ✅ NEW Products tab
+      OwnerAddProductScreen(
+        ownerUserId: widget.ownerUserId,
+        shopId: 1, // TODO: pass real shopId from login/prefs
       ),
+      OwnerProductsListScreen(
+        ownerUserId: widget.ownerUserId,
+        shopId: 1, // TODO pass real shopId
+      ),
+      // const _PlaceholderScreen(
+      //   title: "Articles",
+      //   subtitle: "Coming soon • publish & promote articles",
+      //   icon: Icons.article_rounded,
+      // ),
       const _PlaceholderScreen(
         title: "Account",
         subtitle: "Coming soon • shop profile & settings",
@@ -284,8 +303,9 @@ class _OwnerBottomNav extends StatelessWidget {
                     label: "Orders",
                     badge: ordersBadge,
                   ),
-                  item(i: 2, icon: Icons.article_rounded, label: "Articles"),
-                  item(i: 3, icon: Icons.person_rounded, label: "Account"),
+                  item(i: 2, icon: Icons.inventory_2_rounded, label: "Add Products"), // ✅ new
+                  item(i: 3, icon: Icons.article_rounded, label: "Products"),
+                  item(i: 4, icon: Icons.person_rounded, label: "Account"),
                 ],
               ),
             ),

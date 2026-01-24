@@ -8,12 +8,19 @@ import 'package:google_fonts/google_fonts.dart';
 
 class OwnerDashboardScreen extends StatefulWidget {
   final VoidCallback onOpenOrders;
-  const OwnerDashboardScreen({super.key, required this.onOpenOrders});
+
+  // ✅ NEW: receive owner id from login
+  final int ownerUserId;
+
+  const OwnerDashboardScreen({
+    super.key,
+    required this.onOpenOrders,
+    required this.ownerUserId,
+  });
 
   @override
   State<OwnerDashboardScreen> createState() => _OwnerDashboardScreenState();
 }
-
 class _OwnerDashboardScreenState extends State<OwnerDashboardScreen>
     with TickerProviderStateMixin {
   // ✅ Theme (match your customer reference)

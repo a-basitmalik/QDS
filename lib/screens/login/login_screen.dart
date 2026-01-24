@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:qds/screens/ShopOwner/owner_dashboard_screen.dart';
 // import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -874,7 +875,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         body: jsonEncode({
           "email": email,
           "password": password,
-          "fcm_token": fcmToken, // send empty until Firebase is enabled
+          "fcm_token": fcmToken,
         }),
       );
 
@@ -883,15 +884,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       if (resp.statusCode == 200 && data["ok"] == true) {
         final token = data["token"].toString();
         final user = (data["user"] ?? {}) as Map<String, dynamic>;
-
-        final userId = user["id"].toString();
         final role = (user["role"] ?? "").toString().toLowerCase();
 
-        // Save session
+        // ✅ IMPORTANT: get user id properly (int)
+        final dynamic rawId = user["id"];
+        if (rawId == null) {
+          _showError("Login ok, but user id missing from response.");
+          return;
+        }
+        final int userIdInt = rawId is int ? rawId : int.parse(rawId.toString());
+
+        // ✅ Save session (use consistent keys everywhere)
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("token", token);
-        await prefs.setString("userId", userId);
         await prefs.setString("role", role);
+
+        // ✅ Save user id
+        await prefs.setInt("user_id", userIdInt);
+        await prefs.setString("user_id_str", "$userIdInt");
+
+        // ✅ For shop-owner module (optional but helpful)
+        await prefs.setInt("owner_user_id", userIdInt);
 
         // Navigate by role
         if (role == "customer") {
@@ -902,12 +915,17 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           return;
         }
 
-        if (role == "shop_owner" || role == "shopowner" ||
-            role == "shop owner") {
-          Navigator.pushReplacement(
+        if (role == "shop_owner" || role == "shopowner" || role == "shop owner") {
+          Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ShopOwnerShell()),
+            MaterialPageRoute(
+              builder: (_) => ShopOwnerShell(
+                ownerUserId: userIdInt,
+              ),
+
+            ),
           );
+
           return;
         }
 
@@ -923,12 +941,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
   }
 
+
+
 }
 
 
 
 
-  /// ─────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────
 /// Background (light + subtle red blobs)
 /// ─────────────────────────────────────────────────────────────
 class NexoraBackground extends StatelessWidget {
