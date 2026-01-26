@@ -910,7 +910,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         if (role == "customer") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                customerUserId: userIdInt,
+              ),
+            ),
           );
           return;
         }
@@ -940,7 +944,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
 
 }

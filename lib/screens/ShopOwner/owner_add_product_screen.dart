@@ -10,6 +10,9 @@ import 'package:http/http.dart' as http;
 
 import 'owner_size_chart_screen.dart';
 import 'package:qds/models/size_chart_models.dart';
+import 'owner_create_category_screen.dart';
+import 'owner_create_subcategory_screen.dart';
+import 'package:qds/models/category_models.dart';
 
 class OwnerAddProductScreen extends StatefulWidget {
   final int ownerUserId;
@@ -35,6 +38,14 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
   static const _ink = Color(0xFF140504);
 
   late final AnimationController _ambientCtrl;
+
+  // ✅ Categories: we only show SUB-CATEGORIES for selection
+  bool _loadingCats = true;
+  final List<SelectableCategory> _allCats = [];
+  final Set<int> _selectedCategoryIds = {};
+
+  // ✅ Keep parents list for Create-SubCategory screen
+  final List<Map<String, dynamic>> _parents = [];
 
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -71,6 +82,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     _salePctCtrl.text = "10";
 
     _loadSizeCharts();
+    _loadCategories();
   }
 
   @override
@@ -101,15 +113,84 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     color: _ink.withOpacity(0.55),
   );
 
-  Uri _sizeChartsUri() => Uri.parse(
-    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/size-charts",
-  );
+  // ✅ shop id = owner user id in your system (as you said)
+  Uri _categoriesUri() =>
+      Uri.parse("$_baseUrl/shop-owner/shops/${widget.ownerUserId}/categories");
+
+  /// ✅ Expected API response:
+  /// {
+  ///   ok: true,
+  ///   data: {
+  ///     parents: [{id,name},...],
+  ///     sub_categories: [{id,name,parent_id,parent_name},...]
+  ///   }
+  /// }
+  Future<void> _loadCategories() async {
+    try {
+      if (mounted) setState(() => _loadingCats = true);
+
+      final res =
+      await http.get(_categoriesUri()).timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) {
+        if (mounted) setState(() => _loadingCats = false);
+        return;
+      }
+
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      final data = decoded["data"] as Map<String, dynamic>? ?? {};
+
+      final parentsRaw = (data["parents"] as List? ?? const []);
+      final subsRaw = (data["sub_categories"] as List? ?? const []);
+
+      // cache parents for Create-SubCategory screen
+      final parents = parentsRaw
+          .map((e) => e as Map<String, dynamic>)
+          .map((m) => {
+        "id": (m["id"] as num).toInt(),
+        "name": (m["name"] ?? "").toString(),
+      })
+          .toList();
+
+      // ONLY sub-categories selectable
+      final flat = <SelectableCategory>[];
+      for (final s in subsRaw) {
+        final sm = s as Map<String, dynamic>;
+        final sid = (sm["id"] as num).toInt();
+        final sname = (sm["name"] ?? "").toString();
+        final pname = (sm["parent_name"] ?? "").toString();
+        final title = pname.isEmpty ? sname : "$pname › $sname";
+
+        flat.add(SelectableCategory(id: sid, title: title, isSub: true));
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _parents
+          ..clear()
+          ..addAll(parents);
+
+        _allCats
+          ..clear()
+          ..addAll(flat);
+
+        _selectedCategoryIds.removeWhere((id) => !_allCats.any((x) => x.id == id));
+
+        _loadingCats = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCats = false);
+    }
+  }
+
+  Uri _sizeChartsUri() =>
+      Uri.parse("$_baseUrl/shop-owner/shops/${widget.ownerUserId}/size-charts");
 
   Future<void> _loadSizeCharts() async {
     try {
       if (mounted) setState(() => _loadingCharts = true);
 
-      final res = await http.get(_sizeChartsUri()).timeout(const Duration(seconds: 15));
+      final res =
+      await http.get(_sizeChartsUri()).timeout(const Duration(seconds: 15));
       if (res.statusCode != 200) {
         if (mounted) setState(() => _loadingCharts = false);
         return;
@@ -131,7 +212,7 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         _charts
           ..clear()
           ..addAll(parsed);
-        // keep selection if still exists
+
         if (_selectedChartId != null &&
             !_charts.any((c) => c.id == _selectedChartId)) {
           _selectedChartId = null;
@@ -151,13 +232,12 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
       MaterialPageRoute(
         builder: (_) => OwnerSizeChartScreen(
           ownerUserId: widget.ownerUserId,
-          shopId: widget.ownerUserId,
+          shopId: widget.ownerUserId, // ✅ shop == owner
         ),
       ),
     );
 
     if (created != null) {
-      // refresh list from server to ensure ID exists + consistent
       await _loadSizeCharts();
       if (!mounted) return;
       setState(() => _selectedChartId = created.id);
@@ -174,9 +254,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     setState(() => _variants.removeAt(idx));
   }
 
-  Uri _createProductUri() => Uri.parse(
-    "$_baseUrl/shop-owner/shops/${widget.ownerUserId}/products/full",
-  );
+  Uri _createProductUri() =>
+      Uri.parse("$_baseUrl/shop-owner/shops/${widget.ownerUserId}/products/full");
 
   Future<void> _submit() async {
     if (_saving) return;
@@ -203,6 +282,11 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     if (_onSale && salePct <= 0) return _toast("Sale percent must be > 0.");
     if (variants.isEmpty) return _toast("Add at least one size/stock variant.");
 
+    // ✅ MUST select sub-category
+    if (_selectedCategoryIds.isEmpty) {
+      return _toast("Please select at least one sub-category.");
+    }
+
     final payload = {
       "owner_user_id": widget.ownerUserId,
       "title": title,
@@ -213,8 +297,8 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
       "main_image_url": mainImg.isEmpty ? null : mainImg,
       "sub_images": subs,
       "variants": variants,
-      // ✅ join-table will use this:
       "size_chart_id": _selectedChartId,
+      "category_ids": _selectedCategoryIds.toList(), // ✅ only sub-categories IDs
     };
 
     try {
@@ -262,6 +346,46 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         content: Text(msg, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
       ),
     );
+  }
+
+  // ✅ Create Category: parent/top-level
+  Future<void> _openCreateCategory() async {
+    HapticFeedback.selectionClick();
+    final created = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        // ✅ shop == owner
+        builder: (_) => OwnerCreateCategoryScreen(shopId: widget.ownerUserId),
+      ),
+    );
+
+    if (created != null) {
+      await _loadCategories();
+    }
+  }
+
+  // ✅ Create SubCategory: can choose parent or no parent inside that screen
+  Future<void> _openCreateSubCategory() async {
+    HapticFeedback.selectionClick();
+
+    // ensure parents list exists (safe if user didn't refresh)
+    if (_parents.isEmpty) {
+      await _loadCategories();
+    }
+
+    final created = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OwnerCreateSubCategoryScreen(
+          shopOwnerUserId: widget.ownerUserId,
+          parents: _parents,
+        ),
+      ),
+    );
+
+    if (created != null) {
+      await _loadCategories();
+    }
   }
 
   @override
@@ -405,7 +529,14 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                         ),
                         const SizedBox(height: 12),
                         _variantsCard(),
-
+                        const SizedBox(height: 18),
+                        _sectionHeader(
+                          "Product Sub-Categories",
+                          "Select one or more (ONLY sub-categories)",
+                          Icons.category_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        _categoryCard(),
                         const SizedBox(height: 18),
                         _sectionHeader(
                           "Size Chart",
@@ -414,7 +545,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                         ),
                         const SizedBox(height: 12),
                         _sizeChartCard(),
-
                         const SizedBox(height: 18),
                         _glassPill(
                           text: _saving ? "Saving..." : "Save Product",
@@ -509,6 +639,149 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.0),
       ),
       child: Icon(icon, color: Colors.white.withOpacity(0.92)),
+    );
+  }
+
+  Widget _categoryCard() {
+    return _glassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Selected sub-categories (multi)", style: _subtle()),
+          const SizedBox(height: 10),
+          if (_loadingCats)
+            Text(
+              "Loading sub-categories...",
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w900,
+                color: _ink.withOpacity(0.45),
+              ),
+            )
+          else ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedCategoryIds.map((id) {
+                final item = _allCats.firstWhere((x) => x.id == id);
+                return InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: () => setState(() => _selectedCategoryIds.remove(id)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: Colors.white.withOpacity(0.66),
+                      border: Border.all(color: _primary.withOpacity(0.14), width: 1.0),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.subdirectory_arrow_right_rounded,
+                            size: 16, color: _primary.withOpacity(0.78)),
+                        const SizedBox(width: 8),
+                        Text(
+                          item.title,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12.2,
+                            color: _ink.withOpacity(0.80),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.close_rounded, size: 16, color: _ink.withOpacity(0.55)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            _multiSelectDropdown(),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _glassPill(text: "Create Category", onTap: _openCreateCategory),
+              const SizedBox(width: 10),
+              _glassPill(text: "Create Sub Category", onTap: _openCreateSubCategory),
+              const Spacer(),
+              _glassPill(text: "Refresh", onTap: _loadCategories),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _multiSelectDropdown() {
+    final r = BorderRadius.circular(18);
+
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: r,
+            color: Colors.white.withOpacity(0.66),
+            border: Border.all(color: _primary.withOpacity(0.10), width: 1.0),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: null,
+              isExpanded: true,
+              hint: Text(
+                "Tap to add sub-category",
+                style: GoogleFonts.manrope(
+                  fontSize: 12.6,
+                  fontWeight: FontWeight.w900,
+                  color: _ink.withOpacity(0.42),
+                ),
+              ),
+              items: _allCats.map((c) {
+                final already = _selectedCategoryIds.contains(c.id);
+                return DropdownMenuItem<int>(
+                  value: c.id,
+                  enabled: !already,
+                  child: Row(
+                    children: [
+                      Icon(Icons.subdirectory_arrow_right_rounded,
+                          size: 16,
+                          color: _primary.withOpacity(already ? 0.25 : 0.78)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          c.title,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.8,
+                            fontWeight: FontWeight.w900,
+                            color: _ink.withOpacity(already ? 0.35 : 0.82),
+                          ),
+                        ),
+                      ),
+                      if (already)
+                        Text(
+                          "Added",
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11.8,
+                            color: _ink.withOpacity(0.35),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (id) {
+                if (id == null) return;
+                HapticFeedback.selectionClick();
+                setState(() => _selectedCategoryIds.add(id));
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -705,7 +978,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                   Expanded(
                     child: _miniField(
                       key: ValueKey("size_${i}_${v.size}"),
-
                       label: "Size",
                       value: v.size,
                       hint: "e.g. M",
@@ -717,7 +989,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                   Expanded(
                     child: _miniField(
                       key: ValueKey("stock_${i}_${v.stock}"),
-
                       label: "Stock",
                       value: v.stock.toString(),
                       hint: "0",
@@ -758,7 +1029,6 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
     );
   }
 
-  // ✅ FIXED typing: no controller created per build; uses TextFormField initialValue
   Widget _miniField({
     Key? key,
     required String label,
@@ -873,12 +1143,14 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.centerLeft,
-        child: Text("Loading size charts...",
-            style: GoogleFonts.manrope(
-              fontSize: 12.6,
-              fontWeight: FontWeight.w900,
-              color: _ink.withOpacity(0.45),
-            )),
+        child: Text(
+          "Loading size charts...",
+          style: GoogleFonts.manrope(
+            fontSize: 12.6,
+            fontWeight: FontWeight.w900,
+            color: _ink.withOpacity(0.45),
+          ),
+        ),
       );
     }
 
@@ -917,17 +1189,19 @@ class _OwnerAddProductScreenState extends State<OwnerAddProductScreen>
                     ),
                   ),
                 ),
-                ..._charts.map((c) => DropdownMenuItem<int?>(
-                  value: c.id,
-                  child: Text(
-                    c.title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.8,
-                      fontWeight: FontWeight.w900,
-                      color: _ink.withOpacity(0.80),
+                ..._charts.map(
+                      (c) => DropdownMenuItem<int?>(
+                    value: c.id,
+                    child: Text(
+                      c.title,
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.8,
+                        fontWeight: FontWeight.w900,
+                        color: _ink.withOpacity(0.80),
+                      ),
                     ),
                   ),
-                )),
+                ),
               ],
               onChanged: (v) {
                 HapticFeedback.selectionClick();

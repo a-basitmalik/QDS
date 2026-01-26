@@ -19,12 +19,15 @@ import 'package:qds/screens/Customer/wardrobe/wardrobe_interior_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int? customerUserId;
 
+  const HomeScreen({
+    super.key,
+    this.customerUserId,
+  });
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
 class ShopCardData {
   final String name;
   final String meta;
