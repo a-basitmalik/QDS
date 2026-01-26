@@ -1,4 +1,4 @@
-package com.example.qds
+package com.wearkoala.app
 
 import io.flutter.embedding.android.FlutterActivity
 
